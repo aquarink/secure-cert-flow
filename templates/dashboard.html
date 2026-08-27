@@ -498,9 +498,15 @@
               </select>
 
               <template x-if="getSelectedEvent()">
-                <button @click="toggleCertRelease(getSelectedEvent())" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md" :class="getSelectedEvent()?.is_cert_open ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-gray-800 hover:bg-gray-700 text-amber-400 border border-amber-500/40'">
-                  <span x-text="getSelectedEvent()?.is_cert_open ? '🔓 Unduh Sertifikat Dibuka' : '🔒 Unduh Sertifikat Dikunci'"></span>
-                </button>
+                <div class="flex items-center space-x-2">
+                  <button @click="exportAttendancesCSV()" :disabled="attendances.length === 0" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 text-xs font-semibold border border-gray-700 transition flex items-center space-x-1.5 shadow-md">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Export CSV</span>
+                  </button>
+                  <button @click="toggleCertRelease(getSelectedEvent())" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md" :class="getSelectedEvent()?.is_cert_open ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-gray-800 hover:bg-gray-700 text-amber-400 border border-amber-500/40'">
+                    <span x-text="getSelectedEvent()?.is_cert_open ? '🔓 Unduh Sertifikat Dibuka' : '🔒 Unduh Sertifikat Dikunci'"></span>
+                  </button>
+                </div>
               </template>
             </div>
           </div>
@@ -527,7 +533,7 @@
               <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-wider">
                 <tr>
                   <th class="px-4 py-3">Foto Live</th>
-                  <th class="px-4 py-3">Nama Lengkap</th>
+                  <th class="px-4 py-3">Nama & Kontak</th>
                   <th class="px-4 py-3">Institusi</th>
                   <th class="px-4 py-3">Peran / Judul Paper</th>
                   <th class="px-4 py-3">Geotag & IP</th>
@@ -541,7 +547,13 @@
                     <td class="px-4 py-3">
                       <img :src="getMediaUrl(att.photo_url)" class="w-11 h-11 rounded-lg object-cover border border-gray-700 bg-gray-800 cursor-pointer shadow" @click="previewPhoto(getMediaUrl(att.photo_url))" />
                     </td>
-                    <td class="px-4 py-3 font-semibold text-white" x-text="att.full_name"></td>
+                    <td class="px-4 py-3">
+                      <div class="font-semibold text-white" x-text="att.full_name"></div>
+                      <div class="flex flex-col text-[11px] text-gray-400 space-y-0.5 mt-0.5">
+                        <span class="text-indigo-300" x-show="att.email" x-text="'📧 ' + att.email"></span>
+                        <span class="text-emerald-300 font-mono" x-show="att.phone_number" x-text="'📱 ' + att.phone_number"></span>
+                      </div>
+                    </td>
                     <td class="px-4 py-3 text-gray-300" x-text="att.institution"></td>
                     <td class="px-4 py-3">
                       <span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 text-[10px] font-bold" x-text="att.role"></span>
@@ -1546,6 +1558,32 @@
           } catch (e) {
             console.error(e);
           }
+        },
+
+        exportAttendancesCSV() {
+          if (this.attendances.length === 0) return;
+          const evt = this.getSelectedEvent();
+          let csv = "Nama Lengkap,Email,No WhatsApp/HP,Institusi,Peran,Judul Paper,Geotag,IP Address,Waktu Presensi,Kode Klaim,Tautan Sertifikat\n";
+          this.attendances.forEach(att => {
+            const name = `"${(att.full_name || '').replace(/"/g, '""')}"`;
+            const email = `"${(att.email || '').replace(/"/g, '""')}"`;
+            const phone = `"${(att.phone_number || '').replace(/"/g, '""')}"`;
+            const inst = `"${(att.institution || '').replace(/"/g, '""')}"`;
+            const role = `"${(att.role || '').replace(/"/g, '""')}"`;
+            const paper = `"${(att.paper_title || '').replace(/"/g, '""')}"`;
+            const geo = `"${att.latitude && att.longitude ? (att.latitude + ', ' + att.longitude) : ''}"`;
+            const ip = `"${att.ip_address || ''}"`;
+            const time = `"${new Date(att.created_at).toLocaleString('id-ID')}"`;
+            const claim = `"${att.claim_code || ''}"`;
+            const url = att.claim_code ? `"${window.location.origin}/verify/${att.claim_code}"` : '""';
+            csv += `${name},${email},${phone},${inst},${role},${paper},${geo},${ip},${time},${claim},${url}\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Presensi_Kehadiran_${(evt?.name || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+          a.click();
         },
 
         previewPhoto(url) {
