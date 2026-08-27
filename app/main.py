@@ -1,5 +1,5 @@
 """
-Secure Cert Flow - Automated Certificate Generator
+Secure Cert Flow - Automated Certificate Generator & Attendance Management System
 Main Application Entry Point (FastAPI)
 """
 
@@ -50,7 +50,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Automated Certificate Generator & Fraud-Proof Verification System",
+    description="Automated Certificate Generator & Attendance Management System",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -91,7 +91,7 @@ def favicon():
 
 @app.get("/health", tags=["System"])
 def health_check():
-    """Health check endpoint for Docker / Kubernetes / load balancers"""
+    """Health check endpoint for monitoring"""
     return {
         "status": "healthy",
         "app_name": settings.APP_NAME,
@@ -102,13 +102,13 @@ def health_check():
     }
 
 
-# Serve Integrated TailAdmin Pages
+# Serve Integrated TailAdmin & Web UI Pages
 @app.get("/", response_class=HTMLResponse, tags=["Web UI"])
 def index_page(request: Request):
-    """Home / Landing page redirecting to dashboard or claim page"""
+    """Home / Landing page"""
     if os.path.exists(os.path.join(TEMPLATES_DIR, "index.html")):
         return templates.TemplateResponse(request=request, name="index.html", context={"app_name": settings.APP_NAME})
-    return HTMLResponse("<h2>Secure Cert Flow - Automated Certificate Generator API Active</h2><p>Visit <a href='/docs'>/docs</a> for API documentation.</p>")
+    return HTMLResponse("<h2>Secure Cert Flow API Active</h2>")
 
 
 @app.get("/login", response_class=HTMLResponse, tags=["Web UI"])
@@ -139,3 +139,9 @@ def claim_page(request: Request):
 def verify_page(request: Request, claim_code: str):
     """Public certificate validation page (QR scan target)"""
     return templates.TemplateResponse(request=request, name="verify.html", context={"claim_code": claim_code, "app_name": settings.APP_NAME})
+
+
+@app.get("/attendance/{event_id}", response_class=HTMLResponse, tags=["Web UI"])
+def attendance_page(request: Request, event_id: str):
+    """Public participant attendance check-in page with live photo & GPS"""
+    return templates.TemplateResponse(request=request, name="attendance.html", context={"event_id": event_id, "app_name": settings.APP_NAME})
