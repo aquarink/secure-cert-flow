@@ -285,6 +285,7 @@ def preview_template_layout(
             "pos_y": f.pos_y,
             "font_size": f.font_size,
             "font_color": f.font_color or "#1E293B",
+            "font_family": f.font_family or "Cinzel-Bold.ttf",
             "text_align": f.text_align or "center"
         }
         for f in (setup_data.fields or [])
