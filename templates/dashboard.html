@@ -196,10 +196,10 @@
                         </div>
                         <p class="text-[11px] text-gray-400" x-text="'Ukuran: ' + qrConfig.size + 'px • Geser pada kanvas'"></p>
                       </div>
-                      <div class="flex items-center space-x-1">
-                        <button type="button" @click="qrConfig.size = (qrConfig.size === 150 ? 120 : (qrConfig.size === 120 ? 180 : 150))" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-[10px] font-mono text-gray-300" title="Ubah Ukuran">
-                          <span x-text="qrConfig.size + 'px'"></span>
-                        </button>
+                      <div class="flex items-center space-x-1.5">
+                        <button type="button" @click="adjustQrSize(-15)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan QR">-</button>
+                        <span class="text-xs font-mono font-semibold text-indigo-300 w-11 text-center" x-text="qrConfig.size + 'px'"></span>
+                        <button type="button" @click="adjustQrSize(15)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan QR">+</button>
                       </div>
                     </div>
 
@@ -212,10 +212,10 @@
                         </div>
                         <p class="text-[11px] text-gray-400" x-text="'Ukuran Font: ' + certNumConfig.font_size + 'px • Geser pada kanvas'"></p>
                       </div>
-                      <div class="flex items-center space-x-1">
-                        <button type="button" @click="certNumConfig.font_size = (certNumConfig.font_size === 24 ? 20 : (certNumConfig.font_size === 20 ? 28 : 24))" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-[10px] font-mono text-gray-300" title="Ubah Ukuran Font">
-                          <span x-text="certNumConfig.font_size + 'px'"></span>
-                        </button>
+                      <div class="flex items-center space-x-1.5">
+                        <button type="button" @click="adjustCertNumFontSize(-4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan Font">-</button>
+                        <span class="text-xs font-mono font-semibold text-amber-300 w-9 text-center" x-text="certNumConfig.font_size + 'px'"></span>
+                        <button type="button" @click="adjustCertNumFontSize(4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan Font">+</button>
                       </div>
                     </div>
 
@@ -230,9 +230,9 @@
                           <p class="text-[11px] text-gray-400" x-text="'Ukuran Font: ' + field.font_size + 'px • Geser pada kanvas'"></p>
                         </div>
                         <div class="flex items-center space-x-1.5">
-                          <button type="button" @click="field.font_size = Math.max(12, field.font_size - 4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan Font">-</button>
+                          <button type="button" @click="adjustFieldFontSize(field, -4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan Font">-</button>
                           <span class="text-xs font-mono font-semibold text-indigo-300 w-9 text-center" x-text="field.font_size + 'px'"></span>
-                          <button type="button" @click="field.font_size = Math.min(120, field.font_size + 4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan Font">+</button>
+                          <button type="button" @click="adjustFieldFontSize(field, 4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan Font">+</button>
                           <button type="button" @click="removeField(idx)" class="p-1.5 rounded-lg hover:bg-red-900/40 text-gray-500 hover:text-red-400 transition" title="Hapus Parameter">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                           </button>
@@ -255,8 +255,13 @@
               <!-- Interactive Drag & Drop Visual Canvas -->
               <div class="lg:col-span-2 bg-gray-950 border border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[460px]">
                 <div class="w-full flex items-center justify-between mb-3 text-xs text-gray-400">
-                  <span>💡 <em>Klik & tahan untuk menggeser (drag & drop) teks, QR Code/Barcode, dan Nomor Seri:</em></span>
-                  <span class="font-mono text-[11px] text-indigo-400">1920 x 1080 px</span>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-gray-300 font-medium">Tampilan Kanvas:</span>
+                    <button type="button" @click="previewTextMode = !previewTextMode" class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center space-x-1.5" :class="previewTextMode ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300' : 'bg-gray-800 border-gray-700 text-gray-400'">
+                      <span x-text="previewTextMode ? '👁️ Pratinjau Teks Contoh' : '{ } Nama Variabel'"></span>
+                    </button>
+                  </div>
+                  <span class="font-mono text-[11px] text-indigo-400">Resolusi Asli: 1920 x 1080 px</span>
                 </div>
 
                 <!-- Canvas Wrapper -->
@@ -272,13 +277,13 @@
                     <span class="text-xs text-gray-500 font-sans">Unggah gambar template untuk mengaktifkan kanvas</span>
                   </div>
 
-                  <!-- Draggable Dynamic Text Elements with exact key names -->
+                  <!-- Draggable Dynamic Text Elements with live preview sample text -->
                   <template x-for="(field, idx) in templateFields" :key="field.field_key">
                     <div @mousedown.prevent="startDrag('field', idx, $event)"
-                         class="canvas-box absolute px-3 py-1.5 rounded-lg font-bold text-xs shadow-lg transition-shadow"
-                         :class="(draggedTarget === 'field' && draggedIndex === idx) ? 'bg-indigo-600 text-white ring-2 ring-white scale-105 z-30' : 'bg-indigo-950/90 border border-indigo-400/80 text-indigo-200 hover:bg-indigo-900 z-10'"
-                         :style="'left: ' + ((field.pos_x / 1920) * 100) + '%; top: ' + ((field.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(10, Math.round(field.font_size * 0.28)) + 'px;'"
-                         x-text="'\u007B\u007B' + field.field_key + '\u007D\u007D'">
+                         class="canvas-box absolute px-2.5 py-1 rounded-lg font-bold shadow-lg transition-shadow cursor-grab whitespace-nowrap select-none"
+                         :class="(draggedTarget === 'field' && draggedIndex === idx) ? 'bg-indigo-600 text-white ring-2 ring-white scale-105 z-30' : (previewTextMode ? 'bg-slate-900/85 border border-indigo-400/70 text-indigo-100 hover:bg-slate-900 z-10' : 'bg-indigo-950/90 border border-indigo-400/80 text-indigo-200 hover:bg-indigo-900 z-10')"
+                         :style="'left: ' + ((field.pos_x / 1920) * 100) + '%; top: ' + ((field.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(9, Math.round((parseInt(field.font_size, 10) || 36) * 0.28)) + 'px;'"
+                         x-text="previewTextMode ? getFieldSampleText(field.field_key) : ('\u007B\u007B' + field.field_key + '\u007D\u007D')">
                     </div>
                   </template>
 
@@ -286,16 +291,16 @@
                   <div @mousedown.prevent="startDrag('qr', null, $event)"
                        class="canvas-box absolute rounded-xl font-bold flex flex-col items-center justify-center shadow-2xl transition-shadow select-none cursor-grab"
                        :class="draggedTarget === 'qr' ? 'bg-indigo-600 ring-4 ring-white z-40' : 'bg-slate-900/90 border-2 border-indigo-400 text-white hover:bg-slate-800 z-20'"
-                       :style="'left: ' + ((qrConfig.pos_x / 1920) * 100) + '%; top: ' + ((qrConfig.pos_y / 1080) * 100) + '%; width: ' + Math.max(38, Math.round(qrConfig.size * 0.35)) + 'px; height: ' + Math.max(38, Math.round(qrConfig.size * 0.35)) + 'px; transform: translate(-50%, -50%);'">
+                       :style="'left: ' + ((qrConfig.pos_x / 1920) * 100) + '%; top: ' + ((qrConfig.pos_y / 1080) * 100) + '%; width: ' + Math.max(38, Math.round((parseInt(qrConfig.size, 10) || 150) * 0.35)) + 'px; height: ' + Math.max(38, Math.round((parseInt(qrConfig.size, 10) || 150) * 0.35)) + 'px; transform: translate(-50%, -50%);'">
                     <svg class="w-1/2 h-1/2 text-indigo-300" fill="currentColor" viewBox="0 0 24 24"><path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h2v2h-2v-2zm-4-2h2v4h-2v-4zm4 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-6 4h4v2h-4v-2zm6 0h2v2h-2v-2z"/></svg>
                     <span class="text-[7px] font-mono mt-0.5 text-indigo-200">QR/Barcode</span>
                   </div>
 
                   <!-- Draggable Certificate Serial Number / Unique Code Element -->
                   <div @mousedown.prevent="startDrag('certNum', null, $event)"
-                       class="canvas-box absolute px-3 py-1 rounded-lg font-mono font-bold text-xs shadow-lg transition-shadow select-none cursor-grab"
+                       class="canvas-box absolute px-3 py-1 rounded-lg font-mono font-bold shadow-lg transition-shadow select-none cursor-grab whitespace-nowrap"
                        :class="draggedTarget === 'certNum' ? 'bg-indigo-600 text-white ring-2 ring-white z-40' : 'bg-gray-900/90 border border-amber-400 text-amber-300 hover:bg-gray-800 z-20'"
-                       :style="'left: ' + ((certNumConfig.pos_x / 1920) * 100) + '%; top: ' + ((certNumConfig.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(9, Math.round(certNumConfig.font_size * 0.32)) + 'px;'">
+                       :style="'left: ' + ((certNumConfig.pos_x / 1920) * 100) + '%; top: ' + ((certNumConfig.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(9, Math.round((parseInt(certNumConfig.font_size, 10) || 24) * 0.32)) + 'px;'">
                     No: CERT-XXXXXXXX
                   </div>
 
@@ -756,6 +761,7 @@
         showPreviewModal: false,
         previewLoading: false,
         previewImageUrl: '',
+        previewTextMode: true,
         bulkPaperLoading: false,
         eventToDelete: null,
         deleteConfirmText: '',
@@ -989,6 +995,43 @@
             font_size: parseInt(this.newParam.size) || 36
           });
           this.showAddParamModal = false;
+        },
+
+        adjustFieldFontSize(field, delta) {
+          const current = parseInt(field.font_size, 10) || 36;
+          field.font_size = Math.max(12, Math.min(120, current + delta));
+        },
+
+        adjustCertNumFontSize(delta) {
+          const current = parseInt(this.certNumConfig.font_size, 10) || 24;
+          this.certNumConfig.font_size = Math.max(12, Math.min(80, current + delta));
+        },
+
+        adjustQrSize(delta) {
+          const current = parseInt(this.qrConfig.size, 10) || 150;
+          this.qrConfig.size = Math.max(80, Math.min(300, current + delta));
+        },
+
+        getFieldSampleText(key) {
+          const k = (key || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const evt = this.getSelectedEvent();
+          const samples = {
+            'namalengkap': 'Prof. Dr. Ahmad Farhan, M.Kom.',
+            'nama': 'Prof. Dr. Ahmad Farhan, M.Kom.',
+            'namapeserta': 'Prof. Dr. Ahmad Farhan, M.Kom.',
+            'judulpaper': 'AI-Driven Blockchain Security in Multi-Cloud Infrastructure',
+            'judul': 'AI-Driven Blockchain Security in Multi-Cloud Infrastructure',
+            'peran': 'Presenter',
+            'institusi': 'Fakultas Sains dan Teknologi, UIN Jakarta',
+            'afiliasi': 'Fakultas Sains dan Teknologi, UIN Jakarta',
+            'kodeklaim': 'DYBC9PF4',
+            'nomorsertifikat': (evt?.name ? evt.name.substring(0, 4).toUpperCase().replace(/\s+/g, 'C') : 'CERT') + '-2026-DYBC9PF4',
+            'namaacara': evt?.name || 'International Conference on Science & Technology',
+            'tanggalacara': evt?.event_date || '10 September 2026',
+            'lokasiacara': evt?.location || 'Surabaya, Indonesia',
+            'kodepaper': 'ICST-026'
+          };
+          return samples[k] || ('\u007B\u007B' + key + '\u007D\u007D');
         },
 
         removeField(idx) {
