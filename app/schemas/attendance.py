@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 class AttendanceCreate(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=255, example="Dr. Ahmad Farhan, S.Kom., M.T.")
     institution: str = Field(..., min_length=2, max_length=255, example="UIN Syarif Hidayatullah Jakarta")
-    role: str = Field(..., example="Presenter")  # Presenter, Author, Attendee, Guest, Committee
+    role: str = Field("Participant", example="Participant")  # Participant, Presenter, Author, Speaker, Guest, Committee
     paper_id: Optional[uuid.UUID] = None
     paper_title: Optional[str] = None
     photo_base64: str = Field(..., description="Live captured camera frame in base64 format")
@@ -35,6 +35,7 @@ class AttendanceResponse(BaseModel):
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     created_at: datetime
+    claim_code: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -46,5 +47,7 @@ class AttendanceCheckInResult(BaseModel):
     full_name: str
     event_name: str
     role: str
+    claim_code: Optional[str] = None
+    cert_url: Optional[str] = None
     timestamp: datetime
     message: str
