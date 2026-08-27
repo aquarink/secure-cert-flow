@@ -145,3 +145,40 @@ def verify_page(request: Request, claim_code: str):
 def attendance_page(request: Request, event_id: str):
     """Public participant attendance check-in page with live photo & GPS"""
     return templates.TemplateResponse(request=request, name="attendance.html", context={"event_id": event_id, "app_name": settings.APP_NAME})
+
+from fastapi import HTTPException, Response
+
+@app.get("/cert-outputs/{path:path}", tags=["Media"])
+@app.get("/cert-templates/{path:path}", tags=["Media"])
+@app.get("/cert-signatures/{path:path}", tags=["Media"])
+@app.get("/api/v1/storage/{path:path}", tags=["Media"])
+def serve_storage_media(path: str, request: Request):
+    """
+    Directly streams uploaded images (attendance selfies, certificates, templates) from MinIO/Storage
+    """
+    # Detect bucket from URL path or prefix
+    raw_path = request.url.path
+    if raw_path.startswith("/cert-outputs/"):
+        bucket = settings.MINIO_BUCKET_CERTIFICATES
+        obj_name = path
+    elif raw_path.startswith("/cert-templates/"):
+        bucket = settings.MINIO_BUCKET_TEMPLATES
+        obj_name = path
+    elif raw_path.startswith("/cert-signatures/"):
+        bucket = settings.MINIO_BUCKET_SIGNATURES
+        obj_name = path
+    else:
+        # /api/v1/storage/bucket/object_name or /api/v1/storage/object_name
+        parts = path.split("/", 1)
+        if len(parts) == 2 and parts[0] in ["cert-outputs", "cert-templates", "cert-signatures"]:
+            bucket, obj_name = parts[0], parts[1]
+        else:
+            bucket = settings.MINIO_BUCKET_CERTIFICATES
+            obj_name = path
+
+    try:
+        data = minio_service.download_bytes(bucket, obj_name)
+        media_type = "image/jpeg" if obj_name.endswith(".jpg") or obj_name.endswith(".jpeg") else "image/png"
+        return Response(content=data, media_type=media_type)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Media file not found: {str(e)}")
