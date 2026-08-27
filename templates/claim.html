@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klaim Sertifikat Resmi | Secure Cert Flow</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between p-4 selection:bg-indigo-500 selection:text-white" x-data="claimApp()">
+
+  <!-- Header -->
+  <header class="max-w-4xl mx-auto w-full flex items-center justify-between py-6">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+      </div>
+      <span class="text-xl font-bold text-white tracking-tight">Secure Cert <span class="text-indigo-400">Flow</span></span>
+    </div>
+    <a href="/login" class="text-xs font-semibold text-gray-400 hover:text-white transition">Login Panitia &rarr;</a>
+  </header>
+
+  <!-- Main Claim Container -->
+  <main class="max-w-xl mx-auto w-full my-auto py-8">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl p-8 shadow-2xl backdrop-blur">
+      <div class="text-center mb-8">
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Klaim Sertifikat Anda</h1>
+        <p class="text-sm text-gray-400 mt-2">Masukkan 8 karakter kode klaim unik yang dikirimkan oleh panitia acara</p>
+      </div>
+
+      <!-- Claim Input Form -->
+      <form @submit.prevent="submitClaim()" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Kode Klaim Sertifikat (8 Karakter)</label>
+          <div class="relative">
+            <input type="text" x-model="claimCode" maxlength="16" required placeholder="Contoh: 8H7K2M9N" class="w-full px-5 py-4 rounded-2xl bg-gray-950 border border-gray-800 text-center font-mono text-xl uppercase tracking-widest text-indigo-400 font-bold placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+          </div>
+        </div>
+
+        <button type="submit" :disabled="loading" class="w-full py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 text-white font-bold text-base shadow-lg shadow-indigo-600/40 transition flex items-center justify-center space-x-2">
+          <template x-if="loading">
+            <svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          </template>
+          <span x-text="loading ? 'Memvalidasi Kode...' : 'Klaim & Tampilkan Sertifikat'"></span>
+        </button>
+      </form>
+
+      <!-- Error Alert -->
+      <div x-show="errorMessage" x-cloak class="mt-6 p-4 rounded-2xl bg-red-950/60 border border-red-800 text-red-300 text-sm flex items-start space-x-3">
+        <svg class="w-5 h-5 flex-shrink-0 text-red-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span x-text="errorMessage"></span>
+      </div>
+
+      <!-- Certificate Preview Result -->
+      <div x-show="certResult" x-cloak class="mt-8 pt-6 border-t border-gray-800 space-y-6">
+        <div class="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-800/80 flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-white" x-text="certResult?.participant_name"></h4>
+            <p class="text-xs text-emerald-400" x-text="certResult?.event_name + ' • ' + certResult?.event_date"></p>
+          </div>
+        </div>
+
+        <!-- Image Preview -->
+        <div class="rounded-2xl overflow-hidden border border-gray-800 bg-gray-950 shadow-inner">
+          <img :src="certResult?.image_url" alt="Pratinjau Sertifikat" class="w-full h-auto object-contain">
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-gray-500 font-mono">
+          <span>SHA-256 Checksum:</span>
+          <span class="truncate max-w-[200px]" x-text="certResult?.checksum_sha256"></span>
+        </div>
+
+        <!-- Download Button -->
+        <a :href="certResult?.download_url" target="_blank" class="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 transition flex items-center justify-center space-x-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span>Download Sertifikat (PNG/PDF)</span>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="py-6 text-center text-xs text-gray-500">
+    &copy; 2026 Secure Cert Flow • Fraud-Proof Verification System
+  </footer>
+
+  <script>
+    function claimApp() {
+      return {
+        claimCode: '',
+        loading: false,
+        errorMessage: '',
+        certResult: null,
+        async submitClaim() {
+          this.loading = true;
+          this.errorMessage = '';
+          this.certResult = null;
+          try {
+            const res = await fetch('/api/v1/claim', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ claim_code: this.claimCode.trim() })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Klaim sertifikat gagal.');
+
+            this.certResult = data;
+          } catch (e) {
+            this.errorMessage = e.message;
+          } finally {
+            this.loading = false;
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
