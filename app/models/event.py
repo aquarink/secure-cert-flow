@@ -1,5 +1,5 @@
 """
-Event Model for Managing Conferences, Webinars, and Workshops
+Event Model for Managing Conferences, Webinars, Workshops, Competitions, and General Events
 """
 
 import uuid
@@ -16,6 +16,7 @@ class Event(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
+    event_type = Column(String(50), default="general", nullable=False)  # general, webinar, workshop, conference, competition
     location = Column(String(255), nullable=False)
     event_date = Column(Date, nullable=False, index=True)
     description = Column(Text, nullable=True)
