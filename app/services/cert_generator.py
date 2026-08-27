@@ -62,32 +62,119 @@ class CertificateGenerator:
         img_qr = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
         return img_qr.resize((size, size), Image.Resampling.LANCZOS)
 
+    def _smart_wrap_text(
+        self,
+        text: str,
+        font: ImageFont.ImageFont,
+        draw: ImageDraw.ImageDraw,
+        max_width: int
+    ) -> List[str]:
+        """
+        Wraps text preserving atomic author names and whole words without hyphenation.
+        """
+        bbox = draw.textbbox((0, 0), text, font=font)
+        width = bbox[2] - bbox[0]
+        if width <= max_width:
+            return [text]
+
+        # 1. If text has author separators ' - ', break by full author items
+        if " - " in text:
+            authors = text.split(" - ")
+            lines = []
+            current_line = []
+            for a in authors:
+                test_line = " - ".join(current_line + [a])
+                test_bbox = draw.textbbox((0, 0), test_line, font=font)
+                if (test_bbox[2] - test_bbox[0]) <= max_width or not current_line:
+                    current_line.append(a)
+                else:
+                    lines.append(" - ".join(current_line))
+                    current_line = [a]
+            if current_line:
+                lines.append(" - ".join(current_line))
+            return lines
+
+        # 2. Standard word-based wrapping without cutting words
+        words = text.split(" ")
+        lines = []
+        current_line = []
+        for w in words:
+            if not w:
+                continue
+            test_line = " ".join(current_line + [w])
+            test_bbox = draw.textbbox((0, 0), test_line, font=font)
+            if (test_bbox[2] - test_bbox[0]) <= max_width or not current_line:
+                current_line.append(w)
+            else:
+                lines.append(" ".join(current_line))
+                current_line = [w]
+        if current_line:
+            lines.append(" ".join(current_line))
+        return lines
+
     def draw_aligned_text(
         self,
         draw: ImageDraw.ImageDraw,
         text: str,
         pos_x: int,
         pos_y: int,
-        font: ImageFont.ImageFont,
+        font_family: str,
+        font_size: int,
         fill_color: str,
-        align: str = "center"
+        align: str = "center",
+        max_width: Optional[int] = None
     ):
-        """Draws text accurately with Left, Center, or Right alignment"""
+        """
+        Draws text accurately with auto-scaling and atomic multi-line wrapping.
+        Guarantees that words and academic titles (Prof., Dr., gelar) never break awkwardly.
+        """
+        if not text:
+            return
+
+        effective_max_width = max_width or 1600
+
+        # Step A: Auto-scale font size down slightly if overflowing single line
+        current_size = font_size
+        min_auto_size = max(14, int(font_size * 0.70))
+        font = self._get_font(font_family, current_size)
         bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = bbox[2] - bbox[0]
-        text_height = bbox[3] - bbox[1]
+        text_w = bbox[2] - bbox[0]
+
+        while text_w > effective_max_width and current_size > min_auto_size:
+            current_size -= 2
+            font = self._get_font(font_family, current_size)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            text_w = bbox[2] - bbox[0]
+
+        # Step B: Smart atomic multi-line wrap if still exceeding max_width
+        lines = self._smart_wrap_text(text, font, draw, effective_max_width)
+
+        # Calculate line height & total block height
+        sample_bbox = draw.textbbox((0, 0), "Aj", font=font)
+        single_line_h = sample_bbox[3] - sample_bbox[1]
+        line_spacing = int(single_line_h * 1.35)
+        total_block_h = len(lines) * line_spacing
 
         if align == "center":
-            draw_x = pos_x - (text_width // 2)
-            draw_y = pos_y - (text_height // 2)
+            start_y = pos_y - (total_block_h // 2) + (single_line_h // 2)
         elif align == "right":
-            draw_x = pos_x - text_width
-            draw_y = pos_y
+            start_y = pos_y
         else:  # left
-            draw_x = pos_x
-            draw_y = pos_y
+            start_y = pos_y
 
-        draw.text((draw_x, draw_y), text, font=font, fill=fill_color)
+        for idx, line in enumerate(lines):
+            l_bbox = draw.textbbox((0, 0), line, font=font)
+            l_w = l_bbox[2] - l_bbox[0]
+            l_y = start_y + (idx * line_spacing) - (single_line_h // 2)
+
+            if align == "center":
+                l_x = pos_x - (l_w // 2)
+            elif align == "right":
+                l_x = pos_x - l_w
+            else:
+                l_x = pos_x
+
+            draw.text((l_x, l_y), line, font=font, fill=fill_color)
 
     def _resolve_dynamic_value(self, key: str, dynamic_values: Dict[str, Any]) -> str:
         """Smart matching for template parameters ignoring case and underscores"""
@@ -135,9 +222,19 @@ class CertificateGenerator:
             font_color = field.get("font_color", "#1E293B")
             font_family = field.get("font_family", "DejaVuSans-Bold.ttf")
             align = field.get("text_align", "center")
+            max_width = field.get("max_width")
 
-            font = self._get_font(font_family, font_size)
-            self.draw_aligned_text(draw, value, pos_x, pos_y, font, font_color, align)
+            self.draw_aligned_text(
+                draw=draw,
+                text=value,
+                pos_x=pos_x,
+                pos_y=pos_y,
+                font_family=font_family,
+                font_size=font_size,
+                fill_color=font_color,
+                align=align,
+                max_width=max_width
+            )
 
         # 3. Render Auto-numbering serial code
         if cert_number_config and cert_number_config.get("number"):
@@ -148,8 +245,16 @@ class CertificateGenerator:
             num_color = cert_number_config.get("color", "#1E293B")
 
             if num_x is not None and num_y is not None:
-                num_font = self._get_font("DejaVuSans.ttf", num_size)
-                self.draw_aligned_text(draw, f"No: {cert_num}", num_x, num_y, num_font, num_color, "center")
+                self.draw_aligned_text(
+                    draw=draw,
+                    text=f"No: {cert_num}",
+                    pos_x=num_x,
+                    pos_y=num_y,
+                    font_family="DejaVuSans.ttf",
+                    font_size=num_size,
+                    fill_color=num_color,
+                    align="center"
+                )
 
         # 4. Render Signature (Transparent PNG overlay)
         if signature_bytes and signature_config:
