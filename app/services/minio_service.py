@@ -1,15 +1,16 @@
 """
 MinIO / S3 Object Storage Service
 Handles secure file storage for certificate templates, signatures, and generated output.
+Includes short connection timeouts and resilient local fallback.
 """
 
 import io
 import os
+import urllib3
 import logging
 from typing import Optional
 from datetime import timedelta
 from minio import Minio
-from minio.error import S3Error
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -29,13 +30,19 @@ class MinIOService:
         self._init_client()
 
     def _init_client(self):
-        """Initializes the MinIO SDK client instance"""
+        """Initializes the MinIO SDK client instance with 2-second timeout"""
         try:
+            # Custom HTTP client with 2.0s connect timeout to prevent startup hangs
+            http_client = urllib3.PoolManager(
+                timeout=urllib3.Timeout(connect=2.0, read=10.0),
+                retries=urllib3.Retry(total=1, backoff_factor=0.2)
+            )
             self.client = Minio(
                 endpoint=self.endpoint,
                 access_key=self.access_key,
                 secret_key=self.secret_key,
                 secure=self.secure,
+                http_client=http_client
             )
             logger.info(f"MinIO client initialized for endpoint {self.endpoint}")
         except Exception as e:
@@ -43,7 +50,7 @@ class MinIOService:
             self.client = None
 
     def ensure_buckets(self):
-        """Ensures all required buckets exist in MinIO"""
+        """Ensures all required buckets exist in MinIO (non-blocking fallback)"""
         if not self.client:
             return
         
@@ -59,7 +66,8 @@ class MinIOService:
                     self.client.make_bucket(bucket)
                     logger.info(f"Created MinIO bucket: {bucket}")
             except Exception as e:
-                logger.warning(f"MinIO bucket check failed for {bucket}: {e}")
+                logger.warning(f"MinIO bucket check bypassed ({e}). Local storage available.")
+                break  # Don't hang on consecutive bucket checks if host is offline
 
     def upload_bytes(
         self,
