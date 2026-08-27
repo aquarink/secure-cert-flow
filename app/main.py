@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
@@ -30,10 +30,9 @@ async def lifespan(app: FastAPI):
     """Lifecycle event handler for application startup and shutdown"""
     logger.info("Initializing Secure Cert Flow application...")
     
-    # 1. Ensure MinIO buckets are created
+    # 1. Ensure MinIO buckets are checked (non-blocking)
     try:
         minio_service.ensure_buckets()
-        logger.info("MinIO bucket initialization completed.")
     except Exception as e:
         logger.warning(f"MinIO initialization warning: {e}")
 
@@ -98,35 +97,35 @@ def health_check():
 def index_page(request: Request):
     """Home / Landing page redirecting to dashboard or claim page"""
     if os.path.exists(os.path.join(TEMPLATES_DIR, "index.html")):
-        return templates.TemplateResponse("index.html", {"request": request, "app_name": settings.APP_NAME})
+        return templates.TemplateResponse(request=request, name="index.html", context={"app_name": settings.APP_NAME})
     return HTMLResponse("<h2>Secure Cert Flow - Automated Certificate Generator API Active</h2><p>Visit <a href='/docs'>/docs</a> for API documentation.</p>")
 
 
 @app.get("/login", response_class=HTMLResponse, tags=["Web UI"])
 def login_page(request: Request):
     """Sign-in page styled with TailAdmin"""
-    return templates.TemplateResponse("signin.html", {"request": request, "app_name": settings.APP_NAME})
+    return templates.TemplateResponse(request=request, name="signin.html", context={"app_name": settings.APP_NAME})
 
 
 @app.get("/register", response_class=HTMLResponse, tags=["Web UI"])
 def register_page(request: Request):
     """Sign-up page styled with TailAdmin"""
-    return templates.TemplateResponse("signup.html", {"request": request, "app_name": settings.APP_NAME})
+    return templates.TemplateResponse(request=request, name="signup.html", context={"app_name": settings.APP_NAME})
 
 
 @app.get("/dashboard", response_class=HTMLResponse, tags=["Web UI"])
 def dashboard_page(request: Request):
     """Main organizer dashboard styled with TailAdmin"""
-    return templates.TemplateResponse("dashboard.html", {"request": request, "app_name": settings.APP_NAME})
+    return templates.TemplateResponse(request=request, name="dashboard.html", context={"app_name": settings.APP_NAME})
 
 
 @app.get("/claim", response_class=HTMLResponse, tags=["Web UI"])
 def claim_page(request: Request):
     """Public participant claim page"""
-    return templates.TemplateResponse("claim.html", {"request": request, "app_name": settings.APP_NAME})
+    return templates.TemplateResponse(request=request, name="claim.html", context={"app_name": settings.APP_NAME})
 
 
 @app.get("/verify/{claim_code}", response_class=HTMLResponse, tags=["Web UI"])
 def verify_page(request: Request, claim_code: str):
     """Public certificate validation page (QR scan target)"""
-    return templates.TemplateResponse("verify.html", {"request": request, "claim_code": claim_code, "app_name": settings.APP_NAME})
+    return templates.TemplateResponse(request=request, name="verify.html", context={"claim_code": claim_code, "app_name": settings.APP_NAME})
