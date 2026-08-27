@@ -50,6 +50,7 @@ def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
             "pos_x": f.pos_x,
             "pos_y": f.pos_y,
             "font_size": f.font_size,
+            "font_family": f.font_family or "Cinzel-Bold.ttf",
             "font_color": f.font_color or "#1E293B",
             "text_align": f.text_align or "center"
         }
