@@ -3,7 +3,8 @@ Event Model for Managing Conferences, Webinars, and Workshops
 """
 
 import uuid
-from sqlalchemy import Column, String, Text, Date, DateTime, ForeignKey, text
+from datetime import datetime, timezone
+from sqlalchemy import Column, String, Text, Date, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -19,8 +20,8 @@ class Event(Base):
     event_date = Column(Date, nullable=False, index=True)
     description = Column(Text, nullable=True)
     status = Column(String(50), default="draft", nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=text("NOW()"), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=text("NOW()"), onupdate=text("NOW()"), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="events")
@@ -28,3 +29,5 @@ class Event(Base):
     batches = relationship("Batch", back_populates="event", cascade="all, delete-orphan")
     participants = relationship("Participant", back_populates="event", cascade="all, delete-orphan")
     certificates = relationship("Certificate", back_populates="event", cascade="all, delete-orphan")
+    papers = relationship("Paper", back_populates="event", cascade="all, delete-orphan")
+    attendances = relationship("Attendance", back_populates="event", cascade="all, delete-orphan")
