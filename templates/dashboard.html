@@ -407,6 +407,76 @@
             </table>
           </div>
         </div>
+
+        <!-- Authors Certificates Management Card -->
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-lg font-bold border border-indigo-500/30">📜</div>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <h3 class="text-base font-bold text-white">Daftar Sertifikat Authors Terbit</h3>
+                  <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-xs font-bold border border-indigo-500/30" x-text="authorCerts.length + ' Penulis'"></span>
+                </div>
+                <p class="text-xs text-gray-400 mt-0.5">Seluruh penulis yang telah dibuatkan tautan klaim / verifikasi sertifikat authorship.</p>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2 w-full md:w-auto">
+              <input type="text" x-model="authorSearch" placeholder="Cari nama penulis / judul paper..." class="px-3.5 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs w-full md:w-64 focus:border-indigo-500">
+              <button type="button" @click="exportAuthorsCSV()" :disabled="authorCerts.length === 0" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 text-xs font-semibold border border-gray-700 transition shrink-0 flex items-center space-x-1.5">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Authors Certificates Table -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-gray-300">
+              <thead class="bg-gray-800/80 text-gray-400 uppercase text-[10px] tracking-wider">
+                <tr>
+                  <th class="px-4 py-3">Nama Penulis (Author)</th>
+                  <th class="px-4 py-3">Judul Paper</th>
+                  <th class="px-4 py-3">Kode Paper</th>
+                  <th class="px-4 py-3">Nomor Seri & Kode Klaim</th>
+                  <th class="px-4 py-3 text-right">Tautan Sertifikat</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800">
+                <template x-for="ac in filteredAuthorCerts()" :key="ac.participant_id">
+                  <tr class="hover:bg-gray-800/50 transition">
+                    <td class="px-4 py-3 font-semibold text-white">
+                      <div class="flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <span x-text="ac.author_name"></span>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-300" x-text="ac.paper_title || '-'"></td>
+                    <td class="px-4 py-3 font-mono text-indigo-400" x-text="ac.paper_code || '-'"></td>
+                    <td class="px-4 py-3 font-mono text-xs">
+                      <span class="text-amber-400 font-bold" x-text="ac.claim_code"></span>
+                      <span class="text-gray-500 text-[10px] block" x-text="ac.certificate_number"></span>
+                    </td>
+                    <td class="px-4 py-3 text-right space-x-1.5">
+                      <button type="button" @click="copyToClipboard(window.location.origin + ac.cert_url)" class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold border border-gray-700 transition" title="Salin Link">
+                        📋 Salin Link
+                      </button>
+                      <a :href="ac.cert_url" target="_blank" class="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white font-mono text-xs transition border border-indigo-500/40">
+                        Buka Sertifikat ↗
+                      </a>
+                    </td>
+                  </tr>
+                </template>
+                <tr x-show="filteredAuthorCerts().length === 0">
+                  <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                    <span x-text="authorCerts.length === 0 ? 'Belum ada sertifikat authorship yang diterbitkan. Klik \"🎓 Terbitkan Sertifikat Semua Authors\" di atas.' : 'Tidak ditemukan penulis yang sesuai kata kunci pencarian.'"></span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- =================================================================== -->
@@ -779,6 +849,64 @@
     </div>
   </div>
 
+  <!-- MODAL: Authorship Certificates Result Modal -->
+  <div x-show="showAuthorsResultModal" x-cloak class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-indigo-500/40 rounded-3xl w-full max-w-3xl p-6 space-y-4 shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold border border-emerald-500/30">🎉</div>
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Sertifikat Authorship Berhasil Diterbitkan!</h3>
+            <p class="text-xs text-gray-400" x-text="issuedAuthorsResult.length + ' tautan sertifikat penulis siap dibagikan'"></p>
+          </div>
+        </div>
+        <button type="button" @click="showAuthorsResultModal = false" class="p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-auto rounded-2xl bg-gray-950 border border-gray-800">
+        <table class="w-full text-left text-xs text-gray-300">
+          <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-wider sticky top-0">
+            <tr>
+              <th class="px-4 py-3">Nama Penulis</th>
+              <th class="px-4 py-3">Kode Paper</th>
+              <th class="px-4 py-3">Kode Klaim</th>
+              <th class="px-4 py-3 text-right">Aksi</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-800">
+            <template x-for="item in issuedAuthorsResult" :key="item.claim_code">
+              <tr class="hover:bg-gray-800/50 transition">
+                <td class="px-4 py-3 font-semibold text-white">
+                  <span x-text="item.author_name"></span>
+                  <span class="text-gray-500 text-[10px] block truncate max-w-xs" x-text="item.paper_title"></span>
+                </td>
+                <td class="px-4 py-3 font-mono text-indigo-400" x-text="item.paper_code || '-'"></td>
+                <td class="px-4 py-3 font-mono font-bold text-amber-400" x-text="item.claim_code"></td>
+                <td class="px-4 py-3 text-right space-x-1">
+                  <button type="button" @click="copyToClipboard(window.location.origin + item.cert_url)" class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold border border-gray-700 transition">
+                    📋 Salin Link
+                  </button>
+                  <a :href="item.cert_url" target="_blank" class="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white font-mono text-xs transition border border-indigo-500/40">
+                    Buka ↗
+                  </a>
+                </td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-gray-800 text-xs">
+        <span class="text-gray-400">💡 <em>Bagikan tautan sertifikat di atas kepada masing-masing penulis via WhatsApp / Email.</em></span>
+        <button type="button" @click="showAuthorsResultModal = false" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition shadow-lg shadow-indigo-600/30">
+          Selesai
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function dashboardApp() {
       return {
@@ -793,10 +921,14 @@
         showAddPaperModal: false,
         showBulkPaperModal: false,
         showPreviewModal: false,
+        showAuthorsResultModal: false,
         previewLoading: false,
         previewImageUrl: '',
         previewTextMode: true,
         bulkPaperLoading: false,
+        authorCerts: [],
+        authorSearch: '',
+        issuedAuthorsResult: [],
         eventToDelete: null,
         deleteConfirmText: '',
         selectedEventId: '',
@@ -1245,9 +1377,62 @@
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             if (res.ok) this.papers = await res.json();
+            await this.loadAuthorCerts();
           } catch (e) {
             console.error(e);
           }
+        },
+
+        async loadAuthorCerts() {
+          if (!this.selectedEventId) return;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/authors-certificates`, {
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              this.authorCerts = await res.json();
+            }
+          } catch (e) {
+            console.error('Failed to load author certs:', e);
+          }
+        },
+
+        filteredAuthorCerts() {
+          if (!this.authorSearch) return this.authorCerts;
+          const q = this.authorSearch.toLowerCase().trim();
+          return this.authorCerts.filter(ac => 
+            (ac.author_name && ac.author_name.toLowerCase().includes(q)) ||
+            (ac.paper_title && ac.paper_title.toLowerCase().includes(q)) ||
+            (ac.paper_code && ac.paper_code.toLowerCase().includes(q)) ||
+            (ac.claim_code && ac.claim_code.toLowerCase().includes(q))
+          );
+        },
+
+        copyToClipboard(text) {
+          navigator.clipboard.writeText(text);
+          alert('Tautan sertifikat berhasil disalin:\n' + text);
+        },
+
+        exportAuthorsCSV() {
+          if (this.authorCerts.length === 0) return;
+          const evt = this.getSelectedEvent();
+          let csv = "Nama Penulis,Judul Paper,Kode Paper,Kode Klaim,Nomor Sertifikat,Tautan Sertifikat\n";
+          this.authorCerts.forEach(ac => {
+            const author = `"${(ac.author_name || '').replace(/"/g, '""')}"`;
+            const title = `"${(ac.paper_title || '').replace(/"/g, '""')}"`;
+            const code = `"${ac.paper_code || ''}"`;
+            const claim = `"${ac.claim_code || ''}"`;
+            const num = `"${ac.certificate_number || ''}"`;
+            const url = `"${window.location.origin + ac.cert_url}"`;
+            csv += `${author},${title},${code},${claim},${num},${url}\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Sertifikat_Authors_${(evt?.name || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+          a.click();
         },
 
         async submitAddPaper() {
@@ -1310,7 +1495,10 @@
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const data = await res.json();
-            alert(data.message || 'Sertifikat authorship berhasil diterbitkan!');
+            if (!res.ok) throw new Error(data.detail || 'Gagal menerbitkan sertifikat.');
+            this.issuedAuthorsResult = data.authors || [];
+            this.showAuthorsResultModal = true;
+            await this.loadAuthorCerts();
           } catch (e) {
             alert('Gagal menerbitkan sertifikat: ' + e.message);
           }
@@ -1324,7 +1512,10 @@
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             const data = await res.json();
-            alert(data.message || 'Sertifikat authorship berhasil diterbitkan!');
+            if (!res.ok) throw new Error(data.detail || 'Gagal menerbitkan sertifikat.');
+            this.issuedAuthorsResult = data.authors || [];
+            this.showAuthorsResultModal = true;
+            await this.loadAuthorCerts();
           } catch (e) {
             alert('Gagal: ' + e.message);
           }
