@@ -12,6 +12,7 @@ from app.database import get_db
 from app.models import Event, Template, TemplateField, User
 from app.schemas.template import TemplateResponse, TemplateSetupRequest
 from app.services.minio_service import minio_service
+from app.services.cert_generator import cert_generator
 from app.api.deps import get_current_user
 from app.config import settings
 
