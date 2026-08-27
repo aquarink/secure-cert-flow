@@ -1,20 +1,23 @@
 """
 Papers and Submissions API Router
-Handles conference paper catalog, search autocomplete, bulk Excel import, and paper management.
+Handles conference paper catalog, search autocomplete, bulk Excel import, and Authorship Certificate generation.
 """
 
 import io
 import uuid
+import re
+from datetime import datetime
 import pandas as pd
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.database import get_db
-from app.models import Event, Paper, User
+from app.models import Event, Paper, User, Participant, Certificate
 from app.schemas.paper import PaperCreate, PaperUpdate, PaperResponse, PaperBulkCreate
 from app.api.deps import get_current_user
+from app.services import generate_claim_code
 
 router = APIRouter(tags=["Papers & Submissions"])
 
@@ -176,6 +179,94 @@ async def upload_papers_excel(
         db.refresh(p)
 
     return created_papers
+
+
+@router.post("/events/{event_id}/papers/generate-author-certificates")
+def generate_author_certificates(
+    event_id: uuid.UUID,
+    paper_id: Optional[uuid.UUID] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generates Authorship Certificates for authors listed in the paper catalog.
+    Loops through author names, assigns a claim code for each author.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    query = db.query(Paper).filter(Paper.event_id == event_id)
+    if paper_id:
+        query = query.filter(Paper.id == paper_id)
+
+    papers = query.all()
+    results = []
+
+    for paper in papers:
+        if not paper.authors:
+            continue
+
+        # Split authors by comma, semicolon, or 'and'
+        author_list = re.split(r'[,;]|\band\b', paper.authors)
+        for raw_name in author_list:
+            author_name = raw_name.strip()
+            if not author_name or len(author_name) < 2:
+                continue
+
+            # Check if participant already exists for this author + paper
+            p = db.query(Participant).filter(
+                Participant.event_id == event_id,
+                Participant.name == author_name,
+                Participant.role == "Author",
+                Participant.paper_title == paper.title
+            ).first()
+
+            if not p:
+                p = Participant(
+                    event_id=event_id,
+                    name=author_name,
+                    email=f"author_{uuid.uuid4().hex[:6]}@uinjkt.ac.id",
+                    role="Author",
+                    paper_title=paper.title,
+                    custom_data={"paper_code": paper.paper_code}
+                )
+                db.add(p)
+                db.flush()
+
+            cert = db.query(Certificate).filter(Certificate.participant_id == p.id).first()
+            if not cert:
+                claim_code = generate_claim_code()
+                while db.query(Certificate).filter(Certificate.claim_code == claim_code).first():
+                    claim_code = generate_claim_code()
+
+                prefix = event.name[:4].upper().replace(" ", "C")
+                cert_num = f"{prefix}-{datetime.now().year}-{claim_code}"
+                cert = Certificate(
+                    event_id=event_id,
+                    participant_id=p.id,
+                    certificate_number=cert_num,
+                    claim_code=claim_code,
+                    status="GENERATED",
+                    download_count=0
+                )
+                db.add(cert)
+                db.flush()
+
+            results.append({
+                "paper_code": paper.paper_code,
+                "paper_title": paper.title,
+                "author_name": author_name,
+                "claim_code": cert.claim_code,
+                "cert_url": f"/verify/{cert.claim_code}"
+            })
+
+    db.commit()
+    return {
+        "message": f"Berhasil menerbitkan {len(results)} sertifikat authorship untuk para penulis!",
+        "count": len(results),
+        "authors": results
+    }
 
 
 @router.delete("/events/{event_id}/papers/{paper_id}", status_code=status.HTTP_204_NO_CONTENT)
