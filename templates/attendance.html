@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Attendance Check-in</title>
+  <link rel="icon" type="image/png" href="/static/images/favicon.png">
+  <link rel="shortcut icon" href="/static/images/favicon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between" x-data="attendanceApp()" x-init="init()">
+
+  <!-- Top Navbar -->
+  <header class="h-16 border-b border-gray-800/80 bg-gray-900/50 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
+    <div class="flex items-center space-x-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-indigo-600/30">✓</div>
+      <span class="font-bold text-base tracking-tight text-white">Event<span class="text-indigo-400">Attendance</span></span>
+    </div>
+    <div class="flex items-center space-x-2 text-xs">
+      <span class="w-2 h-2 rounded-full" :class="cameraReady && locationReady ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
+      <span class="text-gray-400" x-text="cameraReady && locationReady ? 'Permissions Active' : 'Permissions Required'"></span>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-8 space-y-6">
+
+    <!-- Loading State -->
+    <div x-show="loading" class="p-12 text-center text-gray-400">
+      <svg class="animate-spin h-8 w-8 text-indigo-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+      <p>Loading event information...</p>
+    </div>
+
+    <!-- Success Check-In Screen -->
+    <div x-show="submitted && !loading" x-cloak class="p-8 rounded-3xl bg-gray-900 border border-emerald-500/30 shadow-2xl space-y-6 text-center">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto text-3xl">
+        ✓
+      </div>
+      <div>
+        <h2 class="text-2xl font-extrabold text-white tracking-tight">Attendance Verified & Recorded!</h2>
+        <p class="text-sm text-gray-400 mt-1" x-text="resultMessage"></p>
+      </div>
+
+      <div class="p-6 rounded-2xl bg-gray-950 border border-gray-800 text-left space-y-3 font-mono text-xs">
+        <div class="flex justify-between border-b border-gray-800/80 pb-2">
+          <span class="text-gray-500">Attendee Name</span>
+          <span class="text-white font-bold font-sans" x-text="form.full_name"></span>
+        </div>
+        <div class="flex justify-between border-b border-gray-800/80 pb-2">
+          <span class="text-gray-500">Institution</span>
+          <span class="text-gray-300 font-sans" x-text="form.institution"></span>
+        </div>
+        <div class="flex justify-between border-b border-gray-800/80 pb-2">
+          <span class="text-gray-500">Participation Role</span>
+          <span class="px-2 py-0.5 rounded bg-indigo-900/50 text-indigo-300 border border-indigo-800" x-text="form.role"></span>
+        </div>
+        <template x-if="form.paper_title">
+          <div class="flex justify-between border-b border-gray-800/80 pb-2">
+            <span class="text-gray-500">Paper Title</span>
+            <span class="text-gray-300 font-sans text-right max-w-xs truncate" x-text="form.paper_title"></span>
+          </div>
+        </template>
+        <div class="flex justify-between border-b border-gray-800/80 pb-2">
+          <span class="text-gray-500">Check-in Reference</span>
+          <span class="text-indigo-400" x-text="checkInId"></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-500">Timestamp</span>
+          <span class="text-gray-400" x-text="new Date().toUTCString()"></span>
+        </div>
+      </div>
+
+      <p class="text-xs text-gray-500">
+        Your attendance is securely logged. You will be able to claim and download your verified certificate after the session concludes.
+      </p>
+    </div>
+
+    <!-- Attendance Form -->
+    <div x-show="!submitted && !loading" class="space-y-6">
+
+      <!-- Event Header Banner -->
+      <div class="p-6 md:p-8 rounded-3xl bg-gradient-to-br from-indigo-950/40 via-gray-900 to-gray-900 border border-indigo-800/30 shadow-xl space-y-3">
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">Official Event Check-In</span>
+        <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight" x-text="'Welcome to ' + eventInfo.event_name"></h1>
+        
+        <div class="flex flex-wrap gap-4 text-xs text-gray-400 pt-1">
+          <div class="flex items-center space-x-1.5">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span x-text="eventInfo.event_date"></span>
+          </div>
+          <div class="flex items-center space-x-1.5">
+            <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span x-text="eventInfo.location"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permission Verification Notice -->
+      <div x-show="!cameraReady || !locationReady" class="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          <span>Please allow <strong>Camera</strong> and <strong>GPS Location</strong> permissions in your browser to verify attendance.</span>
+        </div>
+        <button type="button" @click="requestPermissions()" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold font-sans text-xs transition">
+          Grant Access
+        </button>
+      </div>
+
+      <!-- Attendance Form Card -->
+      <form @submit.prevent="submitForm()" class="p-6 md:p-8 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl space-y-6">
+
+        <!-- 1. Name and Title -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Full Name with Academic Title <span class="text-rose-400">*</span></label>
+          <input type="text" x-model="form.full_name" required placeholder="e.g. Prof. Dr. Alex Rivers, M.Sc." class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+        </div>
+
+        <!-- 2. Institution -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Institution / University / Organization <span class="text-rose-400">*</span></label>
+          <input type="text" x-model="form.institution" required placeholder="e.g. Faculty of Science & Technology, UIN Syarif Hidayatullah Jakarta" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+        </div>
+
+        <!-- 3. Role Dropdown -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Participation Role <span class="text-rose-400">*</span></label>
+          <select x-model="form.role" @change="onRoleChange()" required class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition">
+            <option value="Presenter">Presenter (Oral / Parallel Session)</option>
+            <option value="Author">Author / Co-Author</option>
+            <option value="Attendee">Attendee / Participant</option>
+            <option value="Guest">Invited Keynote / Guest</option>
+            <option value="Committee">Organizing Committee</option>
+          </select>
+        </div>
+
+        <!-- 4. Dynamic Paper Title Autocomplete (Visible for Presenter/Author) -->
+        <div x-show="form.role === 'Presenter' || form.role === 'Author'" x-cloak class="space-y-2 p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40">
+          <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center justify-between">
+            <span>Conference Paper Title</span>
+            <span class="text-[10px] text-gray-400 font-normal">Select from list or type title</span>
+          </label>
+          
+          <div class="relative">
+            <input type="text" x-model="paperSearch" @focus="showPaperDropdown = true" @input="filterPapers()" placeholder="Search paper title or code..." class="w-full px-4 py-2.5 rounded-xl bg-gray-950 border border-indigo-700/50 text-white text-sm focus:ring-2 focus:ring-indigo-500 placeholder-gray-600">
+
+            <!-- Paper Autocomplete Dropdown List -->
+            <div x-show="showPaperDropdown && filteredPapers.length > 0" @click.away="showPaperDropdown = false" class="absolute left-0 right-0 top-full mt-1 z-30 max-h-56 overflow-y-auto rounded-xl bg-gray-900 border border-gray-700 shadow-2xl divide-y divide-gray-800 text-xs">
+              <template x-for="p in filteredPapers" :key="p.id">
+                <button type="button" @click="selectPaper(p)" class="w-full text-left p-3 hover:bg-indigo-600/20 hover:text-indigo-300 transition space-y-1">
+                  <div class="flex items-center space-x-2">
+                    <span class="px-1.5 py-0.5 rounded bg-gray-800 text-indigo-400 font-mono text-[10px]" x-text="p.paper_code || 'PAPER'"></span>
+                    <span class="font-semibold text-white truncate" x-text="p.title"></span>
+                  </div>
+                  <div class="text-[11px] text-gray-400 truncate" x-text="'Authors: ' + (p.authors || '-')"></div>
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <template x-if="form.paper_title">
+            <div class="text-xs text-emerald-400 flex items-center space-x-1.5 pt-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="truncate" x-text="'Selected: ' + form.paper_title"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- 5. Live Photo Capture (Camera HTML5) -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Live Camera Verification Photo <span class="text-rose-400">*</span></label>
+            <span class="text-[11px] text-gray-400">Strict Live Capture (No File Upload)</span>
+          </div>
+
+          <div class="relative rounded-2xl bg-gray-950 border border-gray-800 overflow-hidden flex flex-col items-center justify-center min-h-[260px]">
+            <!-- Live Video Stream -->
+            <video x-show="!photoCaptured && cameraReady" id="webcamVideo" autoplay playsinline class="w-full max-h-[340px] object-cover"></video>
+
+            <!-- Captured Image Canvas / Prerender -->
+            <canvas id="photoCanvas" class="hidden"></canvas>
+            <img x-show="photoCaptured" :src="form.photo_base64" class="w-full max-h-[340px] object-cover" />
+
+            <!-- Fallback when camera not started -->
+            <div x-show="!cameraReady && !photoCaptured" class="p-8 text-center space-y-3 text-gray-500">
+              <svg class="w-12 h-12 mx-auto text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <p class="text-xs">Camera is awaiting permission. Click "Grant Access" above.</p>
+            </div>
+
+            <!-- Action Capture Button Overlay -->
+            <div class="absolute bottom-3 left-0 right-0 flex justify-center space-x-3 px-4">
+              <button type="button" x-show="cameraReady && !photoCaptured" @click="takePhoto()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/40 flex items-center space-x-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                <span>Take Live Photo</span>
+              </button>
+
+              <button type="button" x-show="photoCaptured" @click="retakePhoto()" class="px-5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 flex items-center space-x-2 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span>Retake Photo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Geolocation & IP Status Info -->
+        <div class="p-4 rounded-2xl bg-gray-950 border border-gray-800 text-[11px] text-gray-400 flex flex-wrap justify-between items-center gap-2">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full" :class="locationReady ? 'bg-emerald-400' : 'bg-rose-500'"></span>
+            <span x-text="locationReady ? 'GPS Geolocation Active (Lat: ' + (form.latitude?.toFixed(4) || '') + ', Long: ' + (form.longitude?.toFixed(4) || '') + ')' : 'Location Permission Required'"></span>
+          </div>
+          <span class="text-gray-500 font-mono">Anti-Fraud Protection</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" :disabled="submitting || !cameraReady || !locationReady || !photoCaptured" class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm transition shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2">
+          <span x-text="submitting ? 'Verifying & Submitting Check-In...' : 'Submit Official Attendance Check-In'"></span>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+
+      </form>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-800/80 py-6 text-center text-xs text-gray-500">
+    <p>Automated Attendance & Verified Certificate Flow • Official Check-In Portal</p>
+  </footer>
+
+  <script>
+    function attendanceApp() {
+      return {
+        eventId: '{{ event_id }}',
+        loading: true,
+        submitting: false,
+        submitted: false,
+        cameraReady: false,
+        locationReady: false,
+        photoCaptured: false,
+        videoStream: null,
+        resultMessage: '',
+        checkInId: '',
+
+        eventInfo: { event_name: '', event_date: '', location: '', description: '', papers: [] },
+        paperSearch: '',
+        showPaperDropdown: false,
+        filteredPapers: [],
+
+        form: {
+          full_name: '',
+          institution: '',
+          role: 'Presenter',
+          paper_id: null,
+          paper_title: '',
+          photo_base64: '',
+          latitude: null,
+          longitude: null,
+          accuracy_meters: null
+        },
+
+        async init() {
+          await this.loadEventInfo();
+          this.requestPermissions();
+        },
+
+        async loadEventInfo() {
+          try {
+            const res = await fetch(`/api/v1/events/${this.eventId}/attendance/public-info`);
+            if (!res.ok) throw new Error('Event not found.');
+            this.eventInfo = await res.json();
+            this.filteredPapers = this.eventInfo.papers || [];
+          } catch (e) {
+            alert('Failed to load event details: ' + e.message);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        async requestPermissions() {
+          // 1. Request GPS Geolocation
+          if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                this.form.latitude = pos.coords.latitude;
+                this.form.longitude = pos.coords.longitude;
+                this.form.accuracy_meters = pos.coords.accuracy;
+                this.locationReady = true;
+              },
+              (err) => {
+                console.warn('Geolocation denied:', err);
+                this.locationReady = false;
+              },
+              { enableHighAccuracy: true, timeout: 10000 }
+            );
+          }
+
+          // 2. Request Camera Stream
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+              audio: false
+            });
+            this.videoStream = stream;
+            const videoEl = document.getElementById('webcamVideo');
+            if (videoEl) {
+              videoEl.srcObject = stream;
+            }
+            this.cameraReady = true;
+          } catch (err) {
+            console.warn('Camera access denied:', err);
+            this.cameraReady = false;
+          }
+        },
+
+        takePhoto() {
+          const videoEl = document.getElementById('webcamVideo');
+          const canvas = document.getElementById('photoCanvas');
+          if (!videoEl || !canvas) return;
+
+          canvas.width = videoEl.videoWidth || 640;
+          canvas.height = videoEl.videoHeight || 480;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+          this.form.photo_base64 = canvas.toDataURL('image/jpeg', 0.85);
+          this.photoCaptured = true;
+        },
+
+        retakePhoto() {
+          this.form.photo_base64 = '';
+          this.photoCaptured = false;
+          const videoEl = document.getElementById('webcamVideo');
+          if (videoEl && this.videoStream) {
+            videoEl.srcObject = this.videoStream;
+          }
+        },
+
+        onRoleChange() {
+          if (this.form.role !== 'Presenter' && this.form.role !== 'Author') {
+            this.form.paper_id = null;
+            this.form.paper_title = '';
+            this.paperSearch = '';
+          }
+        },
+
+        filterPapers() {
+          const q = this.paperSearch.toLowerCase().trim();
+          this.form.paper_title = this.paperSearch;
+          if (!q) {
+            this.filteredPapers = this.eventInfo.papers || [];
+          } else {
+            this.filteredPapers = (this.eventInfo.papers || []).filter(p => 
+              (p.title && p.title.toLowerCase().includes(q)) ||
+              (p.paper_code && p.paper_code.toLowerCase().includes(q)) ||
+              (p.authors && p.authors.toLowerCase().includes(q))
+            );
+          }
+          this.showPaperDropdown = true;
+        },
+
+        selectPaper(p) {
+          this.form.paper_id = p.id;
+          this.form.paper_title = p.title;
+          this.paperSearch = `${p.paper_code ? '[' + p.paper_code + '] ' : ''}${p.title}`;
+          this.showPaperDropdown = false;
+        },
+
+        async submitForm() {
+          if (!this.form.photo_base64) {
+            alert('Please take a live photo using your camera before submitting.');
+            return;
+          }
+          this.submitting = true;
+
+          try {
+            const res = await fetch(`/api/v1/events/${this.eventId}/attendance/check-in`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(this.form)
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Check-in submission failed.');
+
+            this.resultMessage = data.message;
+            this.checkInId = data.check_in_id;
+            this.submitted = true;
+
+            // Stop camera stream to free hardware
+            if (this.videoStream) {
+              this.videoStream.getTracks().forEach(t => t.stop());
+            }
+          } catch (e) {
+            alert(e.message);
+          } finally {
+            this.submitting = false;
+          }
+        }
+      }
+    }
+  </script>
+</body>
+</html>
