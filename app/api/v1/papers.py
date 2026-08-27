@@ -288,3 +288,39 @@ def delete_paper(
     db.delete(paper)
     db.commit()
     return None
+
+@router.get("/events/{event_id}/authors-certificates")
+def list_authors_certificates(
+    event_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Retrieves all issued author certificates for an event.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    participants = db.query(Participant).filter(
+        Participant.event_id == event_id,
+        Participant.role == "Author"
+    ).all()
+
+    results = []
+    for p in participants:
+        if p.certificate:
+            p_code = p.custom_data.get("paper_code", "") if (p.custom_data and isinstance(p.custom_data, dict)) else ""
+            results.append({
+                "participant_id": str(p.id),
+                "author_name": p.name,
+                "paper_title": p.paper_title,
+                "paper_code": p_code,
+                "claim_code": p.certificate.claim_code,
+                "certificate_number": p.certificate.certificate_number,
+                "cert_url": f"/verify/{p.certificate.claim_code}",
+                "status": p.certificate.status,
+                "created_at": p.certificate.created_at.strftime("%d %b %Y, %H:%M") if p.certificate.created_at else "-"
+            })
+
+    return results
