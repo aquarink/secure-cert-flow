@@ -60,7 +60,6 @@ class CertificateGenerator:
         align: str = "center"
     ):
         """Draws text accurately with Left, Center, or Right alignment"""
-        # Get bounding box of text for accurate anchor positioning
         bbox = draw.textbbox((0, 0), text, font=font)
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
@@ -77,6 +76,17 @@ class CertificateGenerator:
 
         draw.text((draw_x, draw_y), text, font=font, fill=fill_color)
 
+    def _resolve_dynamic_value(self, key: str, dynamic_values: Dict[str, Any]) -> str:
+        """Smart matching for template parameters ignoring case and underscores"""
+        if key in dynamic_values and dynamic_values[key] is not None:
+            return str(dynamic_values[key])
+        
+        k_clean = key.lower().replace("_", "").replace("-", "").replace(" ", "")
+        for dk, dv in dynamic_values.items():
+            if dv is not None and dk.lower().replace("_", "").replace("-", "").replace(" ", "") == k_clean:
+                return str(dv)
+        return ""
+
     def render(
         self,
         template_bytes: bytes,
@@ -88,7 +98,7 @@ class CertificateGenerator:
         cert_number_config: Optional[Dict[str, Any]] = None,
     ) -> Tuple[bytes, str]:
         """
-        Renders complete certificate.
+        Renders complete certificate on demand.
         Returns:
             Tuple of (output_image_bytes, sha256_checksum)
         """
@@ -100,8 +110,8 @@ class CertificateGenerator:
         # 2. Render dynamic text placeholders
         for field in fields_config:
             key = field.get("field_key", "")
-            value = str(dynamic_values.get(key, ""))
-            if not value:
+            value = self._resolve_dynamic_value(key, dynamic_values)
+            if not value or value.lower() == "none" or value.lower() == "nan":
                 continue
 
             pos_x = field.get("pos_x", canvas_width // 2)
@@ -138,32 +148,32 @@ class CertificateGenerator:
                 sig_img = sig_img.resize((sig_w, sig_h), Image.Resampling.LANCZOS)
                 base_image.paste(sig_img, (sig_x, sig_y), mask=sig_img)
             except Exception as e:
-                logger.error("Failed to overlay signature: %s", e)
+                logger.error(f"Failed to composite signature: {e}")
 
         # 5. Render Verification QR Code
         if qr_config and qr_config.get("url"):
             try:
                 qr_url = qr_config.get("url")
                 qr_size = qr_config.get("size", 150)
-                qr_x = qr_config.get("pos_x", canvas_width - qr_size - 60)
-                qr_y = qr_config.get("pos_y", canvas_height - qr_size - 60)
+                qr_x = qr_config.get("pos_x", canvas_width - qr_size - 40)
+                qr_y = qr_config.get("pos_y", canvas_height - qr_size - 40)
 
                 qr_img = self.generate_qr_code(qr_url, size=qr_size)
                 base_image.paste(qr_img, (qr_x, qr_y), mask=qr_img)
             except Exception as e:
-                logger.error("Failed to overlay QR code: %s", e)
+                logger.error(f"Failed to composite QR code: {e}")
 
-        # 6. Export to PNG bytes
+        # 6. Export to PNG bytes and calculate SHA-256 Checksum
         output_buffer = io.BytesIO()
-        rgb_image = base_image.convert("RGB")
+        # Convert RGBA to RGB for standard image output
+        rgb_image = Image.new("RGB", base_image.size, (255, 255, 255))
+        rgb_image.paste(base_image, mask=base_image.split()[3])  # 3 is the alpha channel
         rgb_image.save(output_buffer, format="PNG", optimize=True)
-        output_bytes = output_buffer.getvalue()
 
-        # 7. Compute SHA-256 Checksum for security and fraud protection
-        checksum = hashlib.sha256(output_bytes).hexdigest()
+        rendered_bytes = output_buffer.getvalue()
+        sha256_hash = hashlib.sha256(rendered_bytes).hexdigest()
 
-        return output_bytes, checksum
+        return rendered_bytes, sha256_hash
 
 
-# Global Certificate Generator Singleton
 cert_generator = CertificateGenerator()
