@@ -229,7 +229,10 @@
                           </div>
                           <p class="text-[11px] text-gray-400" x-text="'Ukuran Font: ' + field.font_size + 'px • Geser pada kanvas'"></p>
                         </div>
-                        <div class="flex items-center space-x-1">
+                        <div class="flex items-center space-x-1.5">
+                          <button type="button" @click="field.font_size = Math.max(12, field.font_size - 4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan Font">-</button>
+                          <span class="text-xs font-mono font-semibold text-indigo-300 w-9 text-center" x-text="field.font_size + 'px'"></span>
+                          <button type="button" @click="field.font_size = Math.min(120, field.font_size + 4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan Font">+</button>
                           <button type="button" @click="removeField(idx)" class="p-1.5 rounded-lg hover:bg-red-900/40 text-gray-500 hover:text-red-400 transition" title="Hapus Parameter">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                           </button>
@@ -238,9 +241,14 @@
                     </template>
                   </div>
 
-                  <button @click="saveTemplateSetup()" :disabled="!templateBgUrl" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/20">
-                    💾 Simpan Tata Letak
-                  </button>
+                  <div class="grid grid-cols-2 gap-2 pt-1">
+                    <button type="button" @click="openLivePreview()" :disabled="!templateBgUrl" class="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-1.5">
+                      <span>👁️ Pratinjau Asli</span>
+                    </button>
+                    <button type="button" @click="saveTemplateSetup()" :disabled="!templateBgUrl" class="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-1.5">
+                      <span>💾 Simpan Tata Letak</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -603,6 +611,48 @@
     </div>
   </div>
 
+  <!-- MODAL: Live High-Resolution Certificate Preview Modal -->
+  <div x-show="showPreviewModal" x-cloak class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-indigo-500/40 rounded-3xl w-full max-w-4xl p-6 space-y-4 shadow-2xl flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-sm font-bold border border-indigo-500/30">👁️</div>
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Pratinjau Hasil Sertifikat Asli</h3>
+            <p class="text-xs text-gray-400">Hasil render riil resolusi 1920x1080 menggunakan data contoh presenter & paper</p>
+          </div>
+        </div>
+        <button type="button" @click="showPreviewModal = false" class="p-2 rounded-xl hover:bg-gray-800 text-gray-400 hover:text-white transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Preview Display Area -->
+      <div class="flex-1 overflow-auto rounded-2xl bg-gray-950 border border-gray-800 flex items-center justify-center p-4 min-h-[380px]">
+        <div x-show="previewLoading" class="text-center space-y-3">
+          <svg class="animate-spin h-10 w-10 text-indigo-500 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+          <p class="text-xs text-gray-400">Merender gambar sertifikat dengan ukuran font dan koordinat aktual...</p>
+        </div>
+
+        <template x-if="!previewLoading && previewImageUrl">
+          <img :src="previewImageUrl" alt="Pratinjau Sertifikat Asli" class="w-full max-h-[520px] object-contain rounded-xl shadow-2xl">
+        </template>
+      </div>
+
+      <div class="flex items-center justify-between pt-2 border-t border-gray-800 text-xs text-gray-400">
+        <span>💡 <em>Jika teks terlalu besar/kecil, klik (-) atau (+) pada daftar parameter di sidebar, lalu klik pratinjau lagi.</em></span>
+        <div class="flex items-center space-x-2">
+          <button type="button" @click="showPreviewModal = false" class="px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-white font-semibold transition">
+            Tutup & Sesuaikan
+          </button>
+          <button type="button" @click="saveTemplateSetup(); showPreviewModal = false" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow-lg shadow-emerald-600/30">
+            💾 Simpan Tata Letak Ini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: Add Paper Modal -->
   <div x-show="showAddPaperModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6 space-y-4">
@@ -703,6 +753,9 @@
         showAddParamModal: false,
         showAddPaperModal: false,
         showBulkPaperModal: false,
+        showPreviewModal: false,
+        previewLoading: false,
+        previewImageUrl: '',
         bulkPaperLoading: false,
         eventToDelete: null,
         deleteConfirmText: '',
@@ -1031,6 +1084,58 @@
             body: JSON.stringify(payload)
           });
           if (res.ok) alert('Tata letak posisi koordinat (parameter teks, QR Code/Barcode, dan Nomor Seri) berhasil disimpan!');
+        },
+
+        async openLivePreview() {
+          if (!this.selectedEventId || !this.templateBgUrl) {
+            alert('Unggah template sertifikat terlebih dahulu untuk melihat pratinjau.');
+            return;
+          }
+          this.previewLoading = true;
+          this.showPreviewModal = true;
+          this.previewImageUrl = '';
+
+          const payload = {
+            width: 1920,
+            height: 1080,
+            qr_x: parseInt(this.qrConfig.pos_x),
+            qr_y: parseInt(this.qrConfig.pos_y),
+            qr_size: parseInt(this.qrConfig.size),
+            cert_number_x: parseInt(this.certNumConfig.pos_x),
+            cert_number_y: parseInt(this.certNumConfig.pos_y),
+            cert_number_font_size: parseInt(this.certNumConfig.font_size),
+            fields: this.templateFields.map(f => ({
+              field_key: f.field_key,
+              label: f.label || f.field_key,
+              pos_x: parseInt(f.pos_x),
+              pos_y: parseInt(f.pos_y),
+              font_size: parseInt(f.font_size),
+              font_color: '#1E293B',
+              text_align: 'center',
+              is_required: true
+            }))
+          };
+
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/template/preview`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) throw new Error('Gagal menghasilkan pratinjau sertifikat.');
+            const blob = await res.blob();
+            this.previewImageUrl = URL.createObjectURL(blob);
+          } catch (err) {
+            alert(err.message);
+            this.showPreviewModal = false;
+          } finally {
+            this.previewLoading = false;
+          }
         },
 
         async loadPapers() {
