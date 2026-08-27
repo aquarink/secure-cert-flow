@@ -12,6 +12,8 @@
   <style>
     body { font-family: 'Inter', sans-serif; }
     [x-cloak] { display: none !important; }
+    .canvas-box { cursor: grab; user-select: none; }
+    .canvas-box:active { cursor: grabbing; }
   </style>
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex" x-data="dashboardApp()" x-init="init()">
@@ -37,7 +39,7 @@
 
         <button @click="activeTab = 'papers'" :class="activeTab === 'papers' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <span>3. Judul Paper</span>
+          <span>3. Judul Paper / Karya</span>
         </button>
 
         <button @click="activeTab = 'attendance'" :class="activeTab === 'attendance' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
@@ -47,7 +49,7 @@
 
         <button @click="activeTab = 'import'" :class="activeTab === 'import' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-          <span>5. Import Data Excel</span>
+          <span>5. Import Data Peserta</span>
         </button>
 
         <button @click="activeTab = 'certs'" :class="activeTab === 'certs' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
@@ -71,7 +73,7 @@
     </div>
   </aside>
 
-  <!-- Main Content -->
+  <!-- Main Content Area -->
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
     <!-- Top Header -->
     <header class="h-16 bg-gray-900 border-b border-gray-800 px-6 flex items-center justify-between">
@@ -87,13 +89,13 @@
     <main class="flex-1 overflow-y-auto p-6 space-y-6">
 
       <!-- =================================================================== -->
-      <!-- TAB 1: KELOLA ACARA (EVENT MANAGEMENT)                             -->
+      <!-- TAB 1: KELOLA ACARA                                                -->
       <!-- =================================================================== -->
       <div x-show="activeTab === 'events'" x-cloak class="space-y-6">
         <div class="flex justify-between items-center">
           <div>
-            <h2 class="text-xl font-bold text-white">Kelola Acara & Konferensi</h2>
-            <p class="text-sm text-gray-400">Pusat kendali pembuatan acara sebelum menerbitkan sertifikat atau membuka form presensi</p>
+            <h2 class="text-xl font-bold text-white">Kelola Acara (Semua Tipe Acara)</h2>
+            <p class="text-sm text-gray-400">Pusat kendali untuk Webinar, Pelatihan/Workshop, Konferensi, Lomba, maupun Acara Umum</p>
           </div>
           <button @click="showCreateEventModal = true" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-600/30 text-sm flex items-center space-x-2 transition">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -107,10 +109,12 @@
             <div class="p-6 rounded-2xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition flex flex-col justify-between">
               <div>
                 <div class="flex items-center justify-between mb-2">
-                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-900/50 text-indigo-300 border border-indigo-800" x-text="event.status"></span>
+                  <div class="flex items-center space-x-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-900/50 text-indigo-300 border border-indigo-800" x-text="formatEventType(event.event_type)"></span>
+                    <span class="text-xs text-gray-500 font-mono" x-text="event.status"></span>
+                  </div>
                   <div class="flex items-center space-x-2">
                     <span class="text-xs text-gray-400" x-text="event.event_date"></span>
-                    <!-- Tombol Hapus Acara Ketat -->
                     <button @click="openDeleteEventModal(event)" class="p-1 rounded-lg hover:bg-red-900/40 text-gray-500 hover:text-red-400 transition" title="Hapus Acara">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                     </button>
@@ -134,7 +138,7 @@
                 </div>
                 <div class="grid grid-cols-3 gap-1.5">
                   <button @click="selectEvent(event, 'designer')" class="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-indigo-400 text-center transition">Template</button>
-                  <button @click="selectEvent(event, 'papers')" class="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-emerald-400 text-center transition">Papers</button>
+                  <button @click="selectEvent(event, 'papers')" class="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-emerald-400 text-center transition">Paper/Karya</button>
                   <button @click="selectEvent(event, 'attendance')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white text-center transition">Presensi</button>
                 </div>
               </div>
@@ -150,8 +154,8 @@
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
-              <h2 class="text-xl font-bold text-white">Visual Template & Placement</h2>
-              <p class="text-sm text-gray-400">Unggah template mentah (naked certificate), tambahkan parameter, dan atur penempatannya secara fleksibel</p>
+              <h2 class="text-xl font-bold text-white">Visual Template & Penempatan</h2>
+              <p class="text-sm text-gray-400">Unggah gambar template sertifikat kosong (*naked certificate*), tambahkan parameter, lalu geser (drag & drop) posisinya secara bebas di atas kanvas.</p>
             </div>
             <select x-model="selectedEventId" @change="loadEventTemplate()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
               <option value="">-- Pilih Acara --</option>
@@ -163,68 +167,87 @@
 
           <template x-if="selectedEventId">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <!-- Uploads & Placements List -->
+              <!-- Sidebar Controls -->
               <div class="space-y-4">
                 <div class="p-4 rounded-xl bg-gray-800/80 border border-gray-700">
-                  <label class="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">1. Upload Naked Certificate (Background)</label>
+                  <label class="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">1. Upload Naked Certificate (Template Dasar)</label>
                   <input type="file" @change="uploadBackground($event)" accept="image/*" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
                 </div>
 
-                <div class="p-4 rounded-xl bg-gray-800/80 border border-gray-700">
-                  <label class="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">2. Upload Tanda Tangan Transparan (PNG)</label>
-                  <input type="file" @change="uploadSignature($event)" accept="image/png" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-violet-600 file:text-white hover:file:bg-violet-500 cursor-pointer">
-                </div>
-
-                <!-- Parameters Controls -->
+                <!-- Parameter Penempatan (Clean List) -->
                 <div class="p-4 rounded-xl bg-gray-800/80 border border-gray-700 space-y-3">
                   <div class="flex justify-between items-center">
-                    <h3 class="text-xs font-bold text-white uppercase tracking-wider">3. Parameter Penempatan Dinamis</h3>
-                    <button type="button" @click="openAddParamModal()" class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] flex items-center space-x-1 transition">
+                    <div>
+                      <h3 class="text-xs font-bold text-white uppercase tracking-wider">Parameter Penempatan</h3>
+                      <p class="text-[10px] text-gray-400">Daftar field yang aktif pada kanvas</p>
+                    </div>
+                    <button type="button" @click="openAddParamModal()" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center space-x-1 transition shadow-md">
                       <span>+ Tambah / Bubuhkan</span>
                     </button>
                   </div>
                   
-                  <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    <template x-for="(field, idx) in templateFields" :key="idx">
-                      <div class="p-2.5 rounded-lg bg-gray-900 border border-gray-700/80 text-xs space-y-1.5">
-                        <div class="flex items-center justify-between">
-                          <span class="font-mono font-bold text-indigo-300" x-text="'{{' + field.field_key + '}}'"></span>
-                          <button type="button" @click="removeField(idx)" class="text-gray-500 hover:text-red-400">✕</button>
+                  <!-- Clean List of Active Parameters -->
+                  <div class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    <template x-for="(field, idx) in templateFields" :key="field.field_key">
+                      <div class="p-3 rounded-xl bg-gray-900 border border-gray-700/80 flex items-center justify-between hover:border-indigo-500/50 transition">
+                        <div class="space-y-0.5">
+                          <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                            <span class="font-mono font-bold text-sm text-indigo-300" x-text="'{{' + field.field_key + '}}'"></span>
+                          </div>
+                          <p class="text-[11px] text-gray-400" x-text="'Ukuran Font: ' + field.font_size + 'px • Geser pada kanvas'"></p>
                         </div>
-                        <div class="grid grid-cols-3 gap-1.5 text-[11px]">
-                          <div><span class="text-gray-500">X:</span> <input type="number" x-model="field.pos_x" class="w-12 px-1 py-0.5 bg-gray-950 border border-gray-700 rounded text-center"></div>
-                          <div><span class="text-gray-500">Y:</span> <input type="number" x-model="field.pos_y" class="w-12 px-1 py-0.5 bg-gray-950 border border-gray-700 rounded text-center"></div>
-                          <div><span class="text-gray-500">Size:</span> <input type="number" x-model="field.font_size" class="w-12 px-1 py-0.5 bg-gray-950 border border-gray-700 rounded text-center"></div>
+                        <div class="flex items-center space-x-1">
+                          <button type="button" @click="removeField(idx)" class="p-1.5 rounded-lg hover:bg-red-900/40 text-gray-500 hover:text-red-400 transition" title="Hapus Parameter">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                          </button>
                         </div>
                       </div>
                     </template>
+                    <div x-show="templateFields.length === 0" class="p-4 text-center text-xs text-gray-500 border border-dashed border-gray-700 rounded-xl">
+                      Belum ada parameter. Klik "+ Tambah / Bubuhkan" di atas.
+                    </div>
                   </div>
 
-                  <button @click="saveTemplateSetup()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md">
-                    Simpan Seluruh Penempatan
+                  <button @click="saveTemplateSetup()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/20">
+                    💾 Simpan Tata Letak
                   </button>
                 </div>
               </div>
 
-              <!-- Interactive Visual Canvas -->
-              <div class="lg:col-span-2 bg-gray-950 border border-gray-800 rounded-xl p-4 flex flex-col items-center justify-center min-h-[420px]">
-                <p class="text-xs text-gray-400 mb-3">Pratinjau Tata Letak Kanvas (Klik atau atur koordinat X & Y parameter):</p>
-                <div class="relative w-[640px] h-[360px] bg-slate-900 border-2 border-dashed border-gray-700 rounded-lg overflow-hidden shadow-2xl flex flex-col items-center justify-center">
-                  <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20">
-                    <span class="text-4xl font-serif text-gray-400 font-bold">SERTIFIKAT</span>
+              <!-- Interactive Drag & Drop Visual Canvas -->
+              <div class="lg:col-span-2 bg-gray-950 border border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[460px]">
+                <div class="w-full flex items-center justify-between mb-3 text-xs text-gray-400">
+                  <span>💡 <em>Klik & tahan untuk menggeser (drag & drop) posisi teks di atas template sertifikat:</em></span>
+                  <span class="font-mono text-[11px] text-indigo-400">1920 x 1080 px</span>
+                </div>
+
+                <!-- Canvas Wrapper -->
+                <div id="certCanvas"
+                     @mousemove="onCanvasMouseMove($event)"
+                     @mouseup="onCanvasMouseUp()"
+                     @mouseleave="onCanvasMouseUp()"
+                     class="relative w-full max-w-[680px] aspect-[16/9] bg-slate-900 border-2 border-dashed border-indigo-500/30 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center select-none"
+                     :style="templateBgUrl ? 'background-image: url(' + templateBgUrl + '); background-size: cover; background-position: center;' : ''">
+
+                  <div x-show="!templateBgUrl" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-25 space-y-1">
+                    <span class="text-4xl font-serif text-gray-400 font-bold tracking-widest">SERTIFIKAT</span>
+                    <span class="text-xs text-gray-500 font-sans">Unggah gambar template untuk melihat background asli</span>
                   </div>
 
-                  <!-- Dynamic Placed Fields Preview -->
-                  <template x-for="field in templateFields" :key="field.field_key">
-                    <div class="absolute px-2.5 py-1 rounded bg-indigo-500/25 border border-indigo-400/60 text-indigo-200 font-bold text-xs shadow"
-                         :style="'left: ' + ((field.pos_x / 1920) * 100) + '%; top: ' + ((field.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%);'"
+                  <!-- Draggable Dynamic Text Elements -->
+                  <template x-for="(field, idx) in templateFields" :key="field.field_key">
+                    <div @mousedown.prevent="startDrag(idx, $event)"
+                         class="canvas-box absolute px-3 py-1.5 rounded-lg font-bold text-xs shadow-lg transition-shadow"
+                         :class="draggedIndex === idx ? 'bg-indigo-600 text-white ring-2 ring-white scale-105 z-30' : 'bg-indigo-950/80 border border-indigo-400/80 text-indigo-200 hover:bg-indigo-900 z-10'"
+                         :style="'left: ' + ((field.pos_x / 1920) * 100) + '%; top: ' + ((field.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(10, Math.round(field.font_size * 0.28)) + 'px;'"
                          x-text="'{{' + field.field_key + '}}'">
                     </div>
                   </template>
 
-                  <!-- QR & Cert Number Markers -->
-                  <div class="absolute bottom-4 right-4 w-12 h-12 bg-white/20 border border-white/40 rounded flex items-center justify-center text-[9px] text-white">QR Code</div>
-                  <div class="absolute bottom-4 left-4 text-[10px] text-gray-400 font-mono">No: CERT-XXXXXXXX</div>
+                  <!-- Fixed Anchors for QR and Cert Serial -->
+                  <div class="absolute bottom-4 right-4 w-12 h-12 bg-white/20 border border-white/40 rounded-lg flex items-center justify-center text-[9px] text-white font-mono pointer-events-none">QR Code</div>
+                  <div class="absolute bottom-4 left-4 text-[10px] text-gray-400 font-mono pointer-events-none">No: CERT-XXXXXXXX</div>
                 </div>
               </div>
             </div>
@@ -233,22 +256,26 @@
       </div>
 
       <!-- =================================================================== -->
-      <!-- TAB 3: KATALOG JUDUL PAPER (SUBMISSIONS)                            -->
+      <!-- TAB 3: KATALOG JUDUL PAPER / KARYA (SUBMISSIONS)                    -->
       <!-- =================================================================== -->
       <div x-show="activeTab === 'papers'" x-cloak class="space-y-6">
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
-              <h2 class="text-xl font-bold text-white">Katalog Judul Paper & Konferensi</h2>
-              <p class="text-sm text-gray-400">Daftar judul paper ini akan otomatis muncul pada pencarian autocomplete formulir presensi saat peserta memilih peran Presenter / Author</p>
+              <h2 class="text-xl font-bold text-white">Katalog Judul Paper / Karya Submissions</h2>
+              <p class="text-sm text-gray-400">Kelola daftar judul artikel ilmiah atau karya. Judul ini akan muncul otomatis di pencarian autocomplete presensi peserta.</p>
             </div>
-            <div class="flex items-center space-x-3">
+            <div class="flex flex-wrap items-center gap-3">
               <select x-model="selectedEventId" @change="loadPapers()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold">
                 <option value="">-- Pilih Acara --</option>
                 <template x-for="ev in events" :key="ev.id">
                   <option :value="ev.id" x-text="ev.name"></option>
                 </template>
               </select>
+              <button @click="showBulkPaperModal = true" :disabled="!selectedEventId" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-200 font-semibold text-xs border border-gray-700 transition flex items-center space-x-1.5">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                <span>📥 Bulk Import Excel</span>
+              </button>
               <button @click="showAddPaperModal = true" :disabled="!selectedEventId" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold text-xs transition">
                 + Tambah Paper
               </button>
@@ -280,7 +307,7 @@
                   </tr>
                 </template>
                 <tr x-show="papers.length === 0">
-                  <td colspan="5" class="px-4 py-8 text-center text-gray-500">Belum ada data paper untuk acara ini. Klik "+ Tambah Paper" untuk menambahkan.</td>
+                  <td colspan="5" class="px-4 py-8 text-center text-gray-500">Belum ada data paper. Gunakan "Bulk Import Excel" atau "+ Tambah Paper".</td>
                 </tr>
               </tbody>
             </table>
@@ -296,7 +323,7 @@
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h2 class="text-xl font-bold text-white">Presensi & Validasi Kehadiran</h2>
-              <p class="text-sm text-gray-400">Pantau kehadiran peserta secara real-time dengan verifikasi kamera live, geotagging GPS, dan IP tracking</p>
+              <p class="text-sm text-gray-400">Pantau kehadiran peserta secara real-time dengan kamera live, geotagging GPS, dan IP tracking untuk semua tipe acara</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
               <select x-model="selectedEventId" @change="loadAttendances()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold">
@@ -321,7 +348,7 @@
               <div class="space-y-1">
                 <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Tautan Publik Form Presensi</span>
                 <p class="text-sm font-mono text-white select-all break-all" x-text="window.location.origin + '/attendance/' + selectedEventId"></p>
-                <p class="text-[11px] text-gray-400">Bagikan link ini kepada peserta atau tampilkan QR Code di layar presentasi aula/webinar.</p>
+                <p class="text-[11px] text-gray-400">Bagikan link ini kepada peserta seminar/webinar/konferensi untuk check-in kehadiran.</p>
               </div>
               <div class="flex items-center space-x-3 shrink-0">
                 <a :href="'/attendance/' + selectedEventId" target="_blank" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition">
@@ -339,7 +366,7 @@
                   <th class="px-4 py-3">Foto Live</th>
                   <th class="px-4 py-3">Nama Lengkap & Gelar</th>
                   <th class="px-4 py-3">Institusi</th>
-                  <th class="px-4 py-3">Peran & Paper</th>
+                  <th class="px-4 py-3">Peran / Judul Paper</th>
                   <th class="px-4 py-3">Geotag & IP</th>
                   <th class="px-4 py-3">Waktu Presensi</th>
                 </tr>
@@ -366,7 +393,7 @@
                   </tr>
                 </template>
                 <tr x-show="attendances.length === 0">
-                  <td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada peserta yang mengisi presensi untuk acara ini.</td>
+                  <td colspan="6" class="px-4 py-8 text-center text-gray-500">Belum ada data presensi.</td>
                 </tr>
               </tbody>
             </table>
@@ -375,12 +402,12 @@
       </div>
 
       <!-- =================================================================== -->
-      <!-- TAB 5: BULK IMPORT EXCEL (KAFKA QUEUE)                             -->
+      <!-- TAB 5: IMPORT DATA PESERTA (EXCEL BULK)                            -->
       <!-- =================================================================== -->
       <div x-show="activeTab === 'import'" x-cloak class="space-y-6">
         <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
           <h2 class="text-xl font-bold text-white mb-1">Import Data Partisipan (Excel Bulk)</h2>
-          <p class="text-sm text-gray-400 mb-6">Unggah file spreadsheet peserta. Header kolom akan dicocokkan otomatis dengan nama parameter yang sudah diatur pada template.</p>
+          <p class="text-sm text-gray-400 mb-6">Unggah file spreadsheet peserta. Header kolom akan dicocokkan otomatis dengan nama parameter yang sudah dibubuhkan pada template.</p>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-4">
@@ -404,7 +431,7 @@
               </button>
             </div>
 
-            <!-- LIVE KAFKA PROGRESS BAR -->
+            <!-- LIVE PROGRESS BAR -->
             <div class="bg-gray-950 border border-gray-800 rounded-xl p-6 flex flex-col justify-center">
               <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4 flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full" :class="activeBatch.status === 'processing' ? 'bg-amber-400 animate-ping' : 'bg-emerald-400'"></span>
@@ -465,7 +492,7 @@
               <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-wider">
                 <tr>
                   <th class="px-4 py-3">Nama Peserta</th>
-                  <th class="px-4 py-3">Peran & Paper</th>
+                  <th class="px-4 py-3">Peran / Keterangan</th>
                   <th class="px-4 py-3">No Sertifikat</th>
                   <th class="px-4 py-3">Kode Klaim (8-char)</th>
                   <th class="px-4 py-3">Status</th>
@@ -530,50 +557,42 @@
 
   <!-- MODAL: Add Parameter Modal -->
   <div x-show="showAddParamModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-sm p-6 space-y-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-sm p-6 space-y-4">
       <h3 class="text-base font-bold text-white">Bubuhkan Parameter Baru</h3>
+      <p class="text-xs text-gray-400">Beri nama parameter yang akan dicocokkan dengan data peserta.</p>
+      
       <div class="space-y-3 text-xs">
         <div>
           <label class="block font-semibold text-gray-300 mb-1">Nama Parameter (Tanpa Spasi)</label>
-          <input type="text" x-model="newParam.key" placeholder="misal: nama_peserta, judul_paper, peran" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white font-mono text-xs">
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-semibold text-gray-300 mb-1">Koordinat X (px)</label>
-            <input type="number" x-model="newParam.x" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
-          </div>
-          <div>
-            <label class="block font-semibold text-gray-300 mb-1">Koordinat Y (px)</label>
-            <input type="number" x-model="newParam.y" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
-          </div>
+          <input type="text" x-model="newParam.key" placeholder="misal: nama_peserta, peran, predikat, institusi" class="w-full px-3 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white font-mono text-xs focus:border-indigo-500">
         </div>
         <div>
           <label class="block font-semibold text-gray-300 mb-1">Ukuran Font (px)</label>
-          <input type="number" x-model="newParam.size" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
+          <input type="number" x-model="newParam.size" class="w-full px-3 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
         </div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button type="button" @click="showAddParamModal = false" class="px-3 py-1.5 rounded-lg bg-gray-800 text-gray-300 text-xs">Batal</button>
-        <button type="button" @click="confirmAddParam()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Tempatkan</button>
+        <button type="button" @click="showAddParamModal = false" class="px-3.5 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs">Batal</button>
+        <button type="button" @click="confirmAddParam()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Tempatkan di Kanvas</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL: Add Paper Modal -->
   <div x-show="showAddPaperModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6 space-y-4">
-      <h3 class="text-base font-bold text-white">Tambah Judul Paper Baru</h3>
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6 space-y-4">
+      <h3 class="text-base font-bold text-white">Tambah Judul Paper / Karya</h3>
       <form @submit.prevent="submitAddPaper()" class="space-y-3 text-xs">
         <div>
-          <label class="block font-semibold text-gray-300 mb-1">Kode Paper (Opsional)</label>
-          <input type="text" x-model="newPaper.paper_code" placeholder="ICST-001" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
+          <label class="block font-semibold text-gray-300 mb-1">Kode Paper / Karya (Opsional)</label>
+          <input type="text" x-model="newPaper.paper_code" placeholder="ICST-001 / KARYA-A" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
         </div>
         <div>
-          <label class="block font-semibold text-gray-300 mb-1">Judul Paper <span class="text-rose-400">*</span></label>
-          <textarea x-model="newPaper.title" required rows="2" placeholder="Judul artikel ilmiah..." class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs"></textarea>
+          <label class="block font-semibold text-gray-300 mb-1">Judul Paper / Karya <span class="text-rose-400">*</span></label>
+          <textarea x-model="newPaper.title" required rows="2" placeholder="Judul artikel ilmiah atau karya..." class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs"></textarea>
         </div>
         <div>
-          <label class="block font-semibold text-gray-300 mb-1">Nama Penulis (Authors)</label>
+          <label class="block font-semibold text-gray-300 mb-1">Nama Penulis / Tim (Authors)</label>
           <input type="text" x-model="newPaper.authors" placeholder="Ahmad, Siti, Budi" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
         </div>
         <div>
@@ -588,26 +607,55 @@
     </div>
   </div>
 
-  <!-- MODAL: Create Event -->
+  <!-- MODAL: Bulk Import Excel Papers -->
+  <div x-show="showBulkPaperModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6 space-y-4">
+      <h3 class="text-base font-bold text-white">Bulk Import Excel Judul Paper</h3>
+      <p class="text-xs text-gray-400">Unggah file spreadsheet (.xlsx / .csv) yang memuat kolom: <strong>Judul Paper</strong> (wajib), <strong>Kode Paper</strong>, <strong>Penulis</strong>, <strong>Presenter</strong>.</p>
+      
+      <div class="space-y-3 text-xs">
+        <input type="file" id="paperExcelInput" accept=".xlsx, .xls, .csv" class="w-full text-xs text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 cursor-pointer bg-gray-950 rounded-xl p-2 border border-gray-700">
+      </div>
+
+      <div class="flex justify-end space-x-2 pt-2">
+        <button type="button" @click="showBulkPaperModal = false" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs">Batal</button>
+        <button type="button" @click="submitBulkPaperExcel()" :disabled="bulkPaperLoading" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold">
+          <span x-text="bulkPaperLoading ? 'Mengimpor...' : 'Import Semua Paper'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Create Event (Multi-Category Support) -->
   <div x-show="showCreateEventModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl w-full max-w-md p-6">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6">
       <h3 class="text-lg font-bold text-white mb-4">Buat Acara Baru</h3>
-      <form @submit.prevent="createEvent()" class="space-y-4">
+      <form @submit.prevent="createEvent()" class="space-y-3.5 text-xs">
         <div>
-          <label class="block text-xs font-semibold text-gray-300 uppercase mb-1">Nama Acara</label>
-          <input type="text" x-model="newEvent.name" required placeholder="International Conference on Science & Technology 2026" class="w-full px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-sm">
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Nama Acara <span class="text-rose-400">*</span></label>
+          <input type="text" x-model="newEvent.name" required placeholder="Webinar Nasional / Pelatihan AI / ICST 2026" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-300 uppercase mb-1">Lokasi</label>
-          <input type="text" x-model="newEvent.location" required placeholder="Auditorium Utama / Zoom" class="w-full px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-sm">
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Tipe / Kategori Acara</label>
+          <select x-model="newEvent.event_type" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm">
+            <option value="webinar">Webinar / Seminar Daring</option>
+            <option value="workshop">Workshop / Pelatihan / Kursus</option>
+            <option value="conference">Konferensi / Simposium Akademik</option>
+            <option value="competition">Lomba / Kompetisi / Hackathon</option>
+            <option value="general">Umum / Acara Lainnya</option>
+          </select>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-300 uppercase mb-1">Tanggal Acara</label>
-          <input type="date" x-model="newEvent.event_date" required class="w-full px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-sm">
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Lokasi / Platform <span class="text-rose-400">*</span></label>
+          <input type="text" x-model="newEvent.location" required placeholder="Auditorium Utama / Zoom Meeting" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-gray-300 uppercase mb-1">Deskripsi (Opsional)</label>
-          <textarea x-model="newEvent.description" rows="2" class="w-full px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 text-sm"></textarea>
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Tanggal Acara <span class="text-rose-400">*</span></label>
+          <input type="date" x-model="newEvent.event_date" required class="w-full px-3.5 py-2.5 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm">
+        </div>
+        <div>
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Deskripsi (Opsional)</label>
+          <textarea x-model="newEvent.description" rows="2" class="w-full px-3.5 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-xs"></textarea>
         </div>
         <div class="flex justify-end space-x-3 pt-2">
           <button type="button" @click="showCreateEventModal = false" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs font-semibold">Batal</button>
@@ -630,16 +678,24 @@
         showDeleteEventModal: false,
         showAddParamModal: false,
         showAddPaperModal: false,
+        showBulkPaperModal: false,
+        bulkPaperLoading: false,
         eventToDelete: null,
         deleteConfirmText: '',
         selectedEventId: '',
         selectedCertEventId: '',
         importEventId: '',
         importLoading: false,
+        templateBgUrl: '',
         activeBatch: { total: 0, processed: 0, success: 0, failed: 0, percentage: 0, status: '' },
-        newEvent: { name: '', location: '', event_date: new Date().toISOString().split('T')[0], description: '' },
+        newEvent: { name: '', event_type: 'webinar', location: '', event_date: new Date().toISOString().split('T')[0], description: '' },
         newPaper: { paper_code: '', title: '', authors: '', presenter_name: '' },
-        newParam: { key: '', x: 960, y: 500, size: 36 },
+        newParam: { key: '', size: 36 },
+
+        // Interactive Drag-and-Drop State
+        draggedIndex: null,
+        dragOffsetX: 0,
+        dragOffsetY: 0,
         
         templateFields: [
           { field_key: 'nama_peserta', label: 'Nama Peserta', pos_x: 960, pos_y: 450, font_size: 48 },
@@ -649,14 +705,25 @@
 
         getTabTitle() {
           const map = {
-            events: '1. Kelola Acara & Konferensi',
+            events: '1. Kelola Acara (Webinar, Workshop, Konferensi, Lomba)',
             designer: '2. Template & Visual Drag & Drop Placement',
-            papers: '3. Katalog Judul Paper & Submissions',
+            papers: '3. Katalog Judul Paper / Karya Submissions',
             attendance: '4. Presensi Kehadiran Terpadu',
             import: '5. Import Data Partisipan (Excel Bulk)',
             certs: '6. Daftar Sertifikat Terbit & Anti-Fraud'
           };
           return map[this.activeTab] || 'Dashboard';
+        },
+
+        formatEventType(type) {
+          const map = {
+            webinar: 'Webinar',
+            workshop: 'Workshop / Pelatihan',
+            conference: 'Konferensi',
+            competition: 'Lomba',
+            general: 'Acara Umum'
+          };
+          return map[type] || 'Acara Umum';
         },
 
         async init() {
@@ -692,6 +759,7 @@
                 this.selectedEventId = this.events[0].id;
                 this.importEventId = this.events[0].id;
                 this.selectedCertEventId = this.events[0].id;
+                this.loadEventTemplate();
                 this.loadPapers();
                 this.loadAttendances();
                 this.loadCertificates();
@@ -715,7 +783,7 @@
             });
             if (res.ok) {
               this.showCreateEventModal = false;
-              this.newEvent = { name: '', location: '', event_date: new Date().toISOString().split('T')[0], description: '' };
+              this.newEvent = { name: '', event_type: 'webinar', location: '', event_date: new Date().toISOString().split('T')[0], description: '' };
               await this.loadEvents();
             }
           } catch (e) {
@@ -769,8 +837,34 @@
           if (tab === 'certs') this.loadCertificates();
         },
 
+        // Drag & Drop on Canvas
+        startDrag(idx, e) {
+          this.draggedIndex = idx;
+        },
+
+        onCanvasMouseMove(e) {
+          if (this.draggedIndex === null) return;
+          const canvasEl = document.getElementById('certCanvas');
+          if (!canvasEl) return;
+
+          const rect = canvasEl.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Convert proportional click coordinates back to 1920x1080 resolution
+          const propX = Math.round((mouseX / rect.width) * 1920);
+          const propY = Math.round((mouseY / rect.height) * 1080);
+
+          this.templateFields[this.draggedIndex].pos_x = Math.max(50, Math.min(1870, propX));
+          this.templateFields[this.draggedIndex].pos_y = Math.max(50, Math.min(1030, propY));
+        },
+
+        onCanvasMouseUp() {
+          this.draggedIndex = null;
+        },
+
         openAddParamModal() {
-          this.newParam = { key: '', x: 960, y: 500, size: 36 };
+          this.newParam = { key: '', size: 36 };
           this.showAddParamModal = true;
         },
 
@@ -783,8 +877,8 @@
           this.templateFields.push({
             field_key: cleanKey,
             label: cleanKey,
-            pos_x: parseInt(this.newParam.x) || 960,
-            pos_y: parseInt(this.newParam.y) || 500,
+            pos_x: 960,
+            pos_y: 540,
             font_size: parseInt(this.newParam.size) || 36
           });
           this.showAddParamModal = false;
@@ -792,6 +886,35 @@
 
         removeField(idx) {
           this.templateFields.splice(idx, 1);
+        },
+
+        async loadEventTemplate() {
+          if (!this.selectedEventId) return;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}`, {
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              const data = await res.json();
+              if (data.template) {
+                if (data.template.background_image_url) {
+                  this.templateBgUrl = `/api/v1/storage/${data.template.background_image_url}`;
+                }
+                if (data.template.fields && data.template.fields.length > 0) {
+                  this.templateFields = data.template.fields.map(f => ({
+                    field_key: f.field_key,
+                    label: f.label,
+                    pos_x: f.pos_x,
+                    pos_y: f.pos_y,
+                    font_size: f.font_size
+                  }));
+                }
+              }
+            }
+          } catch (e) {
+            console.error(e);
+          }
         },
 
         async uploadBackground(event) {
@@ -805,23 +928,10 @@
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
             body: formData
           });
-          if (res.ok) alert('Background template berhasil diunggah ke storage!');
-        },
-
-        async uploadSignature(event) {
-          const file = event.target.files[0];
-          if (!file) return;
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('pos_x', 200);
-          formData.append('pos_y', 850);
-          const token = localStorage.getItem('auth_token');
-          const res = await fetch(`/api/v1/events/${this.selectedEventId}/template/upload-signature`, {
-            method: 'POST',
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-            body: formData
-          });
-          if (res.ok) alert('Tanda tangan transparan berhasil diunggah!');
+          if (res.ok) {
+            alert('Template dasar berhasil diunggah ke storage!');
+            this.templateBgUrl = URL.createObjectURL(file);
+          }
         },
 
         async saveTemplateSetup() {
@@ -851,7 +961,7 @@
             },
             body: JSON.stringify(payload)
           });
-          if (res.ok) alert('Konfigurasi tata letak berhasil disimpan!');
+          if (res.ok) alert('Tata letak posisi koordinat berhasil disimpan!');
         },
 
         async loadPapers() {
@@ -885,6 +995,36 @@
             }
           } catch (e) {
             alert('Gagal menambah paper: ' + e.message);
+          }
+        },
+
+        async submitBulkPaperExcel() {
+          const fileInput = document.getElementById('paperExcelInput');
+          if (!fileInput || !fileInput.files[0]) {
+            alert('Pilih file spreadsheet (.xlsx, .csv) terlebih dahulu.');
+            return;
+          }
+          this.bulkPaperLoading = true;
+          const formData = new FormData();
+          formData.append('file', fileInput.files[0]);
+          const token = localStorage.getItem('auth_token');
+
+          try {
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/papers/upload-excel`, {
+              method: 'POST',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+              body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.detail || 'Import paper gagal.');
+
+            alert(`Berhasil mengimpor ${data.length} judul paper!`);
+            this.showBulkPaperModal = false;
+            await this.loadPapers();
+          } catch (e) {
+            alert('Gagal bulk import: ' + e.message);
+          } finally {
+            this.bulkPaperLoading = false;
           }
         },
 
