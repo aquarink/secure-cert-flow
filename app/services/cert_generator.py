@@ -20,11 +20,24 @@ class CertificateGenerator:
 
     def _get_font(self, font_name: str, size: int) -> ImageFont.ImageFont:
         """Attempts to load specified TrueType font, falling back gracefully"""
+        if not font_name:
+            font_name = "Roboto-Bold.ttf"
+            
+        if not font_name.endswith(".ttf") and not font_name.endswith(".otf"):
+            font_name = f"{font_name}.ttf"
+
         candidate_paths = [
-            f"/usr/share/fonts/truetype/dejavu/{font_name}",
+            f"/var/www/sertifikat/static/fonts/{font_name}",
+            f"/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/{font_name}",
             f"/usr/share/fonts/truetype/liberation/{font_name}",
+            f"/usr/share/fonts/truetype/dejavu/{font_name}",
+            f"/usr/share/fonts/truetype/croscore/{font_name}",
+            f"/usr/share/fonts/truetype/roboto/{font_name}",
+            "/var/www/sertifikat/static/fonts/Cinzel-Bold.ttf",
+            "/var/www/sertifikat/static/fonts/Montserrat-Bold.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
+            "/usr/share/fonts/truetype/roboto/unhinted/RobotoTTF/Roboto-Bold.ttf",
             self.default_font_path,
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
         ]
         
         for path in candidate_paths:
