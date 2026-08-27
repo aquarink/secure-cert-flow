@@ -189,8 +189,8 @@ def generate_author_certificates(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generates Authorship Certificates for authors listed in the paper catalog.
-    Loops through author names, assigns a claim code for each author.
+    Generates 1 Authorship Certificate per paper in the catalog.
+    Replaces namaLengkap with all author names joined by ' - ' (e.g. Juri - Dery - Dewi).
     """
     event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
     if not event:
@@ -207,63 +207,76 @@ def generate_author_certificates(
         if not paper.authors:
             continue
 
-        # Split authors by comma, semicolon, or 'and'
-        author_list = re.split(r'[,;]|\band\b', paper.authors)
-        for raw_name in author_list:
-            author_name = raw_name.strip()
-            if not author_name or len(author_name) < 2:
-                continue
+        # Split authors by comma, semicolon, or 'and' and clean whitespace
+        raw_authors = re.split(r'[,;]|\band\b| - ', paper.authors)
+        cleaned_authors = [a.strip() for a in raw_authors if a.strip() and len(a.strip()) >= 2]
+        combined_authors_name = " - ".join(cleaned_authors) if cleaned_authors else paper.authors.strip()
 
-            # Check if participant already exists for this author + paper
-            p = db.query(Participant).filter(
-                Participant.event_id == event_id,
-                Participant.name == author_name,
-                Participant.role == "Author",
-                Participant.paper_title == paper.title
-            ).first()
+        # Remove any legacy individual author participants for this paper
+        db.query(Participant).filter(
+            Participant.event_id == event_id,
+            Participant.role == "Author",
+            Participant.paper_title == paper.title,
+            Participant.name != combined_authors_name
+        ).delete(synchronize_session=False)
 
-            if not p:
-                p = Participant(
-                    event_id=event_id,
-                    name=author_name,
-                    email=f"author_{uuid.uuid4().hex[:6]}@uinjkt.ac.id",
-                    role="Author",
-                    paper_title=paper.title,
-                    custom_data={"paper_code": paper.paper_code}
-                )
-                db.add(p)
-                db.flush()
+        # Check if combined participant already exists for this paper
+        p = db.query(Participant).filter(
+            Participant.event_id == event_id,
+            Participant.role == "Author",
+            Participant.paper_title == paper.title
+        ).first()
 
-            cert = db.query(Certificate).filter(Certificate.participant_id == p.id).first()
-            if not cert:
+        if not p:
+            p = Participant(
+                event_id=event_id,
+                name=combined_authors_name,
+                email=f"authors_{uuid.uuid4().hex[:6]}@uinjkt.ac.id",
+                role="Author",
+                paper_title=paper.title,
+                custom_data={"paper_code": paper.paper_code}
+            )
+            db.add(p)
+            db.flush()
+        else:
+            p.name = combined_authors_name
+            db.flush()
+
+        cert = db.query(Certificate).filter(Certificate.participant_id == p.id).first()
+        if not cert:
+            claim_code = generate_claim_code()
+            while db.query(Certificate).filter(Certificate.claim_code == claim_code).first():
                 claim_code = generate_claim_code()
-                while db.query(Certificate).filter(Certificate.claim_code == claim_code).first():
-                    claim_code = generate_claim_code()
 
-                prefix = event.name[:4].upper().replace(" ", "C")
-                cert_num = f"{prefix}-{datetime.now().year}-{claim_code}"
-                cert = Certificate(
-                    event_id=event_id,
-                    participant_id=p.id,
-                    certificate_number=cert_num,
-                    claim_code=claim_code,
-                    status="GENERATED",
-                    download_count=0
-                )
-                db.add(cert)
-                db.flush()
+            prefix = event.name[:4].upper().replace(" ", "C")
+            cert_num = f"{prefix}-{datetime.now().year}-{claim_code}"
+            cert = Certificate(
+                event_id=event_id,
+                participant_id=p.id,
+                certificate_number=cert_num,
+                claim_code=claim_code,
+                status="GENERATED",
+                download_count=0
+            )
+            db.add(cert)
+            db.flush()
+        else:
+            # Invalidate image cache so it re-renders on trigger with the updated combined authors name
+            cert.image_url = None
+            cert.checksum_sha256 = None
+            db.flush()
 
-            results.append({
-                "paper_code": paper.paper_code,
-                "paper_title": paper.title,
-                "author_name": author_name,
-                "claim_code": cert.claim_code,
-                "cert_url": f"/verify/{cert.claim_code}"
-            })
+        results.append({
+            "paper_code": paper.paper_code,
+            "paper_title": paper.title,
+            "author_name": combined_authors_name,
+            "claim_code": cert.claim_code,
+            "cert_url": f"/verify/{cert.claim_code}"
+        })
 
     db.commit()
     return {
-        "message": f"Berhasil menerbitkan {len(results)} sertifikat authorship untuk para penulis!",
+        "message": f"Berhasil menerbitkan {len(results)} sertifikat authorship ({len(results)} paper)!",
         "count": len(results),
         "authors": results
     }
