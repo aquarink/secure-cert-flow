@@ -1,12 +1,13 @@
 """
 Application Configuration Settings
-Loads settings from environment variables with fallback defaults.
+Loads settings from environment variables with URL-encoding for special characters.
 """
 
 import os
-from typing import List, Union
+from typing import List
+from urllib.parse import quote_plus
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, field_validator
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -17,7 +18,7 @@ class Settings(BaseSettings):
     APP_HOST: str = "0.0.0.0"
     APP_PORT: int = 8000
     APP_SECRET_KEY: str = Field(default="dev-secret-key-change-in-production-32chars")
-    APP_BASE_URL: str = "http://localhost:8000"
+    APP_BASE_URL: str = "https://sertifikat.uinjakarta.id"
 
     # Security & JWT
     JWT_SECRET_KEY: str = Field(default="dev-jwt-secret-key-change-in-production-32chars")
@@ -67,17 +68,19 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """Constructs synchronous PostgreSQL connection URL"""
+        """Constructs safe synchronous PostgreSQL connection URL with URL-encoded password"""
+        safe_pass = quote_plus(self.POSTGRES_PASSWORD) if self.POSTGRES_PASSWORD else ""
         return (
-            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"postgresql://{self.POSTGRES_USER}:{safe_pass}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
     @property
     def async_database_url(self) -> str:
-        """Constructs asynchronous PostgreSQL connection URL"""
+        """Constructs safe asynchronous PostgreSQL connection URL with URL-encoded password"""
+        safe_pass = quote_plus(self.POSTGRES_PASSWORD) if self.POSTGRES_PASSWORD else ""
         return (
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:{safe_pass}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
