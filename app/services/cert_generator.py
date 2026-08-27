@@ -136,7 +136,7 @@ class CertificateGenerator:
 
             if num_x is not None and num_y is not None:
                 num_font = self._get_font("DejaVuSans.ttf", num_size)
-                self.draw_aligned_text(draw, f"No: {cert_num}", num_x, num_y, num_font, num_color, "left")
+                self.draw_aligned_text(draw, f"No: {cert_num}", num_x, num_y, num_font, num_color, "center")
 
         # 4. Render Signature (Transparent PNG overlay)
         if signature_bytes and signature_config:
@@ -152,16 +152,18 @@ class CertificateGenerator:
             except Exception as e:
                 logger.error(f"Failed to composite signature: {e}")
 
-        # 5. Render Verification QR Code
+        # 5. Render Verification QR Code (Centered at pos_x, pos_y to match canvas)
         if qr_config and qr_config.get("url"):
             try:
                 qr_url = qr_config.get("url")
                 qr_size = qr_config.get("size", 150)
-                qr_x = qr_config.get("pos_x", canvas_width - qr_size - 40)
-                qr_y = qr_config.get("pos_y", canvas_height - qr_size - 40)
+                qr_x = qr_config.get("pos_x", canvas_width - (qr_size // 2) - 40)
+                qr_y = qr_config.get("pos_y", canvas_height - (qr_size // 2) - 40)
 
                 qr_img = self.generate_qr_code(qr_url, size=qr_size)
-                base_image.paste(qr_img, (qr_x, qr_y), mask=qr_img)
+                paste_x = qr_x - (qr_size // 2)
+                paste_y = qr_y - (qr_size // 2)
+                base_image.paste(qr_img, (paste_x, paste_y), mask=qr_img)
             except Exception as e:
                 logger.error(f"Failed to composite QR code: {e}")
 
