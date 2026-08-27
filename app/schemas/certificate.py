@@ -43,4 +43,5 @@ class CertificateVerificationResponse(BaseModel):
     pdf_url: Optional[str] = None
     checksum_sha256: Optional[str] = None
     status: Optional[str] = None
+    is_cert_open: bool = False
     message: str
