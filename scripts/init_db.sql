@@ -1,10 +1,7 @@
 -- =============================================================================
 -- SECURE CERT FLOW - DATABASE INITIALIZATION SCHEMA
--- Database: PostgreSQL 14+
+-- Database: PostgreSQL 14+ (Native UUID gen_random_uuid supported)
 -- =============================================================================
-
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1. Users Table
 CREATE TABLE IF NOT EXISTS users (
