@@ -96,11 +96,17 @@
         <!-- Event List Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <template x-for="event in events" :key="event.id">
-            <div class="p-6 rounded-2xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition flex flex-col justify-between">
+            <div class="p-6 rounded-2xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition flex flex-col justify-between group">
               <div>
                 <div class="flex items-center justify-between mb-2">
                   <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-900/50 text-indigo-300 border border-indigo-800" x-text="event.status"></span>
-                  <span class="text-xs text-gray-400" x-text="event.event_date"></span>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-xs text-gray-400" x-text="event.event_date"></span>
+                    <!-- Tombol Hapus Acara -->
+                    <button @click="deleteEvent(event)" class="p-1 rounded-lg hover:bg-red-900/50 text-gray-500 hover:text-red-400 transition" title="Hapus Acara">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                  </div>
                 </div>
                 <h3 class="text-lg font-bold text-white tracking-tight" x-text="event.name"></h3>
                 <p class="text-xs text-gray-400 mt-1 flex items-center space-x-1">
@@ -476,6 +482,33 @@
             }
           } catch (e) {
             alert('Gagal membuat acara: ' + e.message);
+          }
+        },
+
+        async deleteEvent(ev) {
+          if (!confirm(`Apakah Anda yakin ingin menghapus acara "${ev.name}" beserta template, peserta, dan seluruh sertifikat yang terkait? Tindakan ini tidak dapat dibatalkan.`)) {
+            return;
+          }
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${ev.id}`, {
+              method: 'DELETE',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok || res.status === 204) {
+              if (this.selectedEventId === ev.id) {
+                this.selectedEventId = '';
+                this.importEventId = '';
+                this.selectedCertEventId = '';
+              }
+              await this.loadEvents();
+              alert(`Acara "${ev.name}" berhasil dihapus.`);
+            } else {
+              const data = await res.json();
+              alert('Gagal menghapus acara: ' + (data.detail || 'Terjadi kesalahan'));
+            }
+          } catch (e) {
+            alert('Gagal menghapus acara: ' + e.message);
           }
         },
 
