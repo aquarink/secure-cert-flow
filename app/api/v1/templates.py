@@ -316,15 +316,15 @@ def preview_template_layout(
 
     qr_config = {
         "url": f"{settings.APP_BASE_URL}/verify/SAMPLE26",
-        "pos_x": setup_data.qr_x or (template.width - 220),
-        "pos_y": setup_data.qr_y or (template.height - 220),
+        "pos_x": setup_data.qr_x if setup_data.qr_x is not None else 1700,
+        "pos_y": setup_data.qr_y if setup_data.qr_y is not None else 860,
         "size": setup_data.qr_size or 150
     }
 
     cert_num_config = {
         "number": f"{event.name[:4].upper().replace(' ', 'C')}-2026-SAMPLE26",
-        "pos_x": setup_data.cert_number_x or 100,
-        "pos_y": setup_data.cert_number_y or (template.height - 100),
+        "pos_x": setup_data.cert_number_x if setup_data.cert_number_x is not None else 250,
+        "pos_y": setup_data.cert_number_y if setup_data.cert_number_y is not None else 980,
         "font_size": setup_data.cert_number_font_size or 24,
         "color": setup_data.cert_number_color or "#475569"
     }
