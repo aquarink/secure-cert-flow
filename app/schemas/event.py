@@ -11,6 +11,7 @@ from app.schemas.template import TemplateResponse
 
 class EventBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
+    event_type: Optional[str] = Field("general", description="Event category: general, webinar, workshop, conference, competition")
     location: str = Field(..., min_length=2, max_length=255)
     event_date: date
     description: Optional[str] = None
@@ -22,6 +23,7 @@ class EventCreate(EventBase):
 
 class EventUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=255)
+    event_type: Optional[str] = None
     location: Optional[str] = Field(None, min_length=2, max_length=255)
     event_date: Optional[date] = None
     description: Optional[str] = None
