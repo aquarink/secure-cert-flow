@@ -18,6 +18,8 @@ class Attendance(Base):
     event_id = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
     paper_id = Column(UUID(as_uuid=True), ForeignKey("papers.id", ondelete="SET NULL"), nullable=True, index=True)
     full_name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=True, index=True)
+    phone_number = Column(String(50), nullable=True)
     institution = Column(String(255), nullable=False)
     role = Column(String(100), nullable=False)  # Presenter, Author, Attendee, Guest, Committee
     paper_title = Column(Text, nullable=True)
