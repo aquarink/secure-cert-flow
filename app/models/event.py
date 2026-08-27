@@ -4,7 +4,7 @@ Event Model for Managing Conferences, Webinars, Workshops, Competitions, and Gen
 
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, Date, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, Date, DateTime, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -21,6 +21,7 @@ class Event(Base):
     event_date = Column(Date, nullable=False, index=True)
     description = Column(Text, nullable=True)
     status = Column(String(50), default="draft", nullable=False)
+    is_cert_open = Column(Boolean, default=False, nullable=False)  # Panitia toggle to release certificate download
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
