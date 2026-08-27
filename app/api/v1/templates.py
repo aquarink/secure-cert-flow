@@ -9,7 +9,7 @@ from PIL import Image
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Event, Template, TemplateField, User
+from app.models import Event, Template, TemplateField, User, Certificate
 from app.schemas.template import TemplateResponse, TemplateSetupRequest
 from app.services.minio_service import minio_service
 from app.services.cert_generator import cert_generator
@@ -231,6 +231,12 @@ def setup_template_layout(
                 is_required=f.is_required
             )
             db.add(new_field)
+
+    # Auto-invalidate cached generated certificates for this event so they will re-render with latest placement on trigger
+    db.query(Certificate).filter(Certificate.event_id == event_id).update({
+        Certificate.image_url: None,
+        Certificate.checksum_sha256: None
+    })
 
     db.commit()
     db.refresh(template)
