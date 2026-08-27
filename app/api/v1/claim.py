@@ -89,15 +89,15 @@ def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
 
     qr_config = {
         "url": f"{settings.APP_BASE_URL}/verify/{cert.claim_code}",
-        "pos_x": template.qr_x or (template.width - 220),
-        "pos_y": template.qr_y or (template.height - 220),
+        "pos_x": template.qr_x if template.qr_x is not None else 1700,
+        "pos_y": template.qr_y if template.qr_y is not None else 860,
         "size": template.qr_size or 150
     }
 
     cert_num_config = {
         "number": cert.certificate_number,
-        "pos_x": template.cert_number_x or 100,
-        "pos_y": template.cert_number_y or (template.height - 100),
+        "pos_x": template.cert_number_x if template.cert_number_x is not None else 250,
+        "pos_y": template.cert_number_y if template.cert_number_y is not None else 980,
         "font_size": template.cert_number_font_size or 24,
         "color": template.cert_number_color or "#475569"
     }
