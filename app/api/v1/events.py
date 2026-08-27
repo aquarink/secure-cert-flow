@@ -1,6 +1,7 @@
 """
 Event Management Endpoints
 Handles event creation, updating, listing, and configuration for organizers.
+Supports conferences, webinars, workshops, competitions, and general events.
 """
 
 import uuid
@@ -36,6 +37,7 @@ def list_events(
             "id": ev.id,
             "user_id": ev.user_id,
             "name": ev.name,
+            "event_type": ev.event_type or "general",
             "location": ev.location,
             "event_date": ev.event_date,
             "description": ev.description,
@@ -56,10 +58,11 @@ def create_event(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Creates a new event (Conference, Webinar, Workshop)"""
+    """Creates a new event (Webinar, Workshop, Conference, Competition, General)"""
     event = Event(
         user_id=current_user.id,
         name=event_in.name,
+        event_type=event_in.event_type or "general",
         location=event_in.location,
         event_date=event_in.event_date,
         description=event_in.description,
@@ -73,6 +76,7 @@ def create_event(
         "id": event.id,
         "user_id": event.user_id,
         "name": event.name,
+        "event_type": event.event_type,
         "location": event.location,
         "event_date": event.event_date,
         "description": event.description,
@@ -85,12 +89,12 @@ def create_event(
 
 
 @router.get("/{event_id}", response_model=EventDetailResponse)
-def get_event_detail(
+def get_event(
     event_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Gets single event details including attached certificate template and fields"""
+    """Retrieves single event details with template metadata"""
     event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
@@ -105,6 +109,7 @@ def get_event_detail(
         "id": event.id,
         "user_id": event.user_id,
         "name": event.name,
+        "event_type": event.event_type or "general",
         "location": event.location,
         "event_date": event.event_date,
         "description": event.description,
@@ -113,7 +118,7 @@ def get_event_detail(
         "updated_at": event.updated_at,
         "participant_count": p_count,
         "certificate_count": c_count,
-        "template": event.template
+        "template": event.template,
     }
 
 
@@ -143,6 +148,7 @@ def update_event(
         "id": event.id,
         "user_id": event.user_id,
         "name": event.name,
+        "event_type": event.event_type or "general",
         "location": event.location,
         "event_date": event.event_date,
         "description": event.description,
