@@ -10,6 +10,8 @@ from pydantic import BaseModel, Field
 
 class AttendanceCreate(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=255, example="Dr. Ahmad Farhan, S.Kom., M.T.")
+    email: Optional[str] = Field(None, min_length=3, max_length=255, example="ahmad.farhan@uinjkt.ac.id")
+    phone_number: Optional[str] = Field(None, min_length=6, max_length=50, example="081234567890")
     institution: str = Field(..., min_length=2, max_length=255, example="UIN Syarif Hidayatullah Jakarta")
     role: str = Field("Participant", example="Participant")  # Participant, Presenter, Author, Speaker, Guest, Committee
     paper_id: Optional[uuid.UUID] = None
@@ -25,6 +27,8 @@ class AttendanceResponse(BaseModel):
     event_id: uuid.UUID
     paper_id: Optional[uuid.UUID] = None
     full_name: str
+    email: Optional[str] = None
+    phone_number: Optional[str] = None
     institution: str
     role: str
     paper_title: Optional[str] = None
