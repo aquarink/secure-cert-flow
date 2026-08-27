@@ -15,6 +15,8 @@ from app.schemas.batch import BatchResponse, BatchProgressResponse
 from app.schemas.participant import ParticipantCreate, ParticipantResponse
 from app.schemas.certificate import CertificateResponse, CertificateVerificationResponse
 from app.schemas.claim import ClaimRequest, ClaimResponse
+from app.schemas.paper import PaperBase, PaperCreate, PaperUpdate, PaperResponse, PaperBulkCreate
+from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceCheckInResult
 
 __all__ = [
     "UserRegister",
@@ -40,4 +42,12 @@ __all__ = [
     "CertificateVerificationResponse",
     "ClaimRequest",
     "ClaimResponse",
+    "PaperBase",
+    "PaperCreate",
+    "PaperUpdate",
+    "PaperResponse",
+    "PaperBulkCreate",
+    "AttendanceCreate",
+    "AttendanceResponse",
+    "AttendanceCheckInResult",
 ]
