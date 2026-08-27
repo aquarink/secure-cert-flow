@@ -131,16 +131,18 @@
         <div class="space-y-2">
           <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Participation Role <span class="text-rose-400">*</span></label>
           <select x-model="form.role" @change="onRoleChange()" required class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition">
+            <option value="Attendee">Participant / Attendee / Peserta</option>
+            <option value="Speaker">Speaker / Narasumber / Keynote</option>
+            <option value="Trainer">Trainer / Instruktur / Fasilitator</option>
             <option value="Presenter">Presenter (Oral / Parallel Session)</option>
             <option value="Author">Author / Co-Author</option>
-            <option value="Attendee">Attendee / Participant</option>
-            <option value="Guest">Invited Keynote / Guest</option>
-            <option value="Committee">Organizing Committee</option>
+            <option value="Guest">Guest / VIP / Undangan</option>
+            <option value="Committee">Organizing Committee / Panitia</option>
           </select>
         </div>
 
-        <!-- 4. Dynamic Paper Title Autocomplete (Visible for Presenter/Author) -->
-        <div x-show="form.role === 'Presenter' || form.role === 'Author'" x-cloak class="space-y-2 p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40">
+        <!-- 4. Dynamic Paper / Topic Search (Visible if role is Presenter/Author and papers exist) -->
+        <div x-show="(form.role === 'Presenter' || form.role === 'Author') && eventInfo.papers && eventInfo.papers.length > 0" x-cloak class="space-y-2 p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40">
           <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center justify-between">
             <span>Conference Paper Title</span>
             <span class="text-[10px] text-gray-400 font-normal">Select from list or type title</span>
