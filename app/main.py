@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
@@ -77,6 +77,16 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # Mount API Routers
 app.include_router(api_v1_router, prefix="/api")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+@app.get("/favicon.png", include_in_schema=False)
+def favicon():
+    """Serves application favicon"""
+    favicon_path = os.path.join(STATIC_DIR, "images", "favicon.png")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path, media_type="image/png")
+    return HTMLResponse(status_code=404)
 
 
 @app.get("/health", tags=["System"])
