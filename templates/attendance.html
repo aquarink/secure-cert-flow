@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Event Attendance Check-in</title>
+  <title>Official Event Attendance Check-In | Secure Cert Flow</title>
   <link rel="icon" type="image/png" href="/static/images/favicon.png">
   <link rel="shortcut icon" href="/static/images/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -16,25 +16,26 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col justify-between" x-data="attendanceApp()" x-init="init()">
 
-  <!-- Top Navbar -->
-  <header class="h-16 border-b border-gray-800/80 bg-gray-900/50 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
+  <!-- Top Navigation Header -->
+  <header class="h-16 border-b border-gray-800 bg-gray-900/60 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
     <div class="flex items-center space-x-3">
-      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-indigo-600/30">✓</div>
-      <span class="font-bold text-base tracking-tight text-white">Event<span class="text-indigo-400">Attendance</span></span>
+      <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-sm">SC</div>
+      <span class="font-bold text-base tracking-tight text-white">Cert<span class="text-indigo-400">Flow</span> Attendance</span>
     </div>
-    <div class="flex items-center space-x-2 text-xs">
-      <span class="w-2 h-2 rounded-full" :class="cameraReady && locationReady ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'"></span>
-      <span class="text-gray-400" x-text="cameraReady && locationReady ? 'Permissions Active' : 'Permissions Required'"></span>
+    <div class="text-xs text-gray-400 flex items-center space-x-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span>Live Verification Portal</span>
     </div>
   </header>
 
   <!-- Main Container -->
-  <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-8 space-y-6">
+  <main class="flex-1 max-w-xl w-full mx-auto p-4 md:p-6 space-y-6 my-auto">
 
-    <!-- Loading State -->
-    <div x-show="loading" class="p-12 text-center text-gray-400">
-      <svg class="animate-spin h-8 w-8 text-indigo-500 mx-auto mb-3" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-      <p>Loading event information...</p>
+    <!-- Loading Skeleton -->
+    <div x-show="loading" class="p-8 rounded-3xl bg-gray-900 border border-gray-800 animate-pulse space-y-4">
+      <div class="h-6 bg-gray-800 rounded-lg w-1/2"></div>
+      <div class="h-4 bg-gray-800 rounded-lg w-3/4"></div>
+      <div class="h-48 bg-gray-800 rounded-2xl"></div>
     </div>
 
     <!-- Success Check-In Screen -->
@@ -46,6 +47,17 @@
         <h2 class="text-2xl font-extrabold text-white tracking-tight">Attendance Verified & Recorded!</h2>
         <p class="text-sm text-gray-400 mt-1" x-text="resultMessage"></p>
       </div>
+
+      <!-- Generated Claim Code Box -->
+      <template x-if="claimCode">
+        <div class="p-4 rounded-2xl bg-indigo-950/60 border border-indigo-500/40 text-center space-y-2">
+          <span class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">Your Certificate Claim Code</span>
+          <div class="text-2xl font-mono font-extrabold text-amber-400 tracking-widest" x-text="claimCode"></div>
+          <a :href="'/verify/' + claimCode" target="_blank" class="inline-block mt-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30">
+            📄 View / Download Official Certificate
+          </a>
+        </div>
+      </template>
 
       <div class="p-6 rounded-2xl bg-gray-950 border border-gray-800 text-left space-y-3 font-mono text-xs">
         <div class="flex justify-between border-b border-gray-800/80 pb-2">
@@ -62,23 +74,19 @@
         </div>
         <template x-if="form.paper_title">
           <div class="flex justify-between border-b border-gray-800/80 pb-2">
-            <span class="text-gray-500">Paper Title</span>
+            <span class="text-gray-500">Assigned Paper</span>
             <span class="text-gray-300 font-sans text-right max-w-xs truncate" x-text="form.paper_title"></span>
           </div>
         </template>
         <div class="flex justify-between border-b border-gray-800/80 pb-2">
           <span class="text-gray-500">Check-in Reference</span>
-          <span class="text-indigo-400" x-text="checkInId"></span>
+          <span class="text-indigo-400 font-sans" x-text="checkInId"></span>
         </div>
         <div class="flex justify-between">
           <span class="text-gray-500">Timestamp</span>
           <span class="text-gray-400" x-text="new Date().toUTCString()"></span>
         </div>
       </div>
-
-      <p class="text-xs text-gray-500">
-        Your attendance is securely logged. You will be able to claim and download your verified certificate after the session concludes.
-      </p>
     </div>
 
     <!-- Attendance Form -->
@@ -89,7 +97,7 @@
         <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">Official Event Check-In</span>
         <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight" x-text="'Welcome to ' + eventInfo.event_name"></h1>
         
-        <div class="flex flex-wrap gap-4 text-xs text-gray-400 pt-1">
+        <div class="flex flex-wrap items-center gap-4 text-xs text-gray-400 pt-2 border-t border-gray-800/80">
           <div class="flex items-center space-x-1.5">
             <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             <span x-text="eventInfo.event_date"></span>
@@ -101,11 +109,11 @@
         </div>
       </div>
 
-      <!-- Permission Verification Notice -->
-      <div x-show="!cameraReady || !locationReady" class="p-4 rounded-2xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs flex items-center justify-between">
+      <!-- Permission Status Warning -->
+      <div x-show="!cameraReady || !locationReady" class="p-4 rounded-2xl bg-amber-950/40 border border-amber-800/50 text-amber-300 text-xs flex items-center justify-between gap-3">
         <div class="flex items-center space-x-2">
           <svg class="w-5 h-5 text-amber-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-          <span>Please allow <strong>Camera</strong> and <strong>GPS Location</strong> permissions in your browser to verify attendance.</span>
+          <span>Camera and Location (GPS) access are required for anti-fraud attendance validation.</span>
         </div>
         <button type="button" @click="requestPermissions()" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold font-sans text-xs transition">
           Grant Access
@@ -127,29 +135,29 @@
           <input type="text" x-model="form.institution" required placeholder="e.g. Faculty of Science & Technology, UIN Syarif Hidayatullah Jakarta" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
         </div>
 
-        <!-- 3. Role Dropdown -->
+        <!-- 3. Role Dropdown (Default: Participant) -->
         <div class="space-y-2">
           <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Participation Role <span class="text-rose-400">*</span></label>
           <select x-model="form.role" @change="onRoleChange()" required class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition">
-            <option value="Attendee">Participant / Attendee / Peserta</option>
-            <option value="Speaker">Speaker / Narasumber / Keynote</option>
-            <option value="Trainer">Trainer / Instruktur / Fasilitator</option>
+            <option value="Participant">Participant / Attendee / Peserta</option>
             <option value="Presenter">Presenter (Oral / Parallel Session)</option>
             <option value="Author">Author / Co-Author</option>
+            <option value="Speaker">Speaker / Narasumber / Keynote</option>
+            <option value="Trainer">Trainer / Instruktur / Fasilitator</option>
             <option value="Guest">Guest / VIP / Undangan</option>
             <option value="Committee">Organizing Committee / Panitia</option>
           </select>
         </div>
 
-        <!-- 4. Dynamic Paper / Topic Search (Visible if role is Presenter/Author and papers exist) -->
-        <div x-show="(form.role === 'Presenter' || form.role === 'Author') && eventInfo.papers && eventInfo.papers.length > 0" x-cloak class="space-y-2 p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40">
+        <!-- 4. Dynamic Paper / Topic Dropdown Search Autocomplete (Visible for Presenter) -->
+        <div x-show="form.role === 'Presenter'" x-cloak class="space-y-2 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-700/50">
           <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center justify-between">
-            <span>Conference Paper Title</span>
-            <span class="text-[10px] text-gray-400 font-normal">Select from list or type title</span>
+            <span>Pilih Judul Paper yang Dipresentasikan <span class="text-rose-400">*</span></span>
+            <span class="text-[10px] text-gray-400 font-normal">Ketik untuk mencari di katalog</span>
           </label>
           
           <div class="relative">
-            <input type="text" x-model="paperSearch" @focus="showPaperDropdown = true" @input="filterPapers()" placeholder="Search paper title or code..." class="w-full px-4 py-2.5 rounded-xl bg-gray-950 border border-indigo-700/50 text-white text-sm focus:ring-2 focus:ring-indigo-500 placeholder-gray-600">
+            <input type="text" x-model="paperSearch" @focus="showPaperDropdown = true" @input="filterPapers()" placeholder="Cari judul paper atau kode paper..." class="w-full px-4 py-2.5 rounded-xl bg-gray-950 border border-indigo-600 text-white text-sm focus:ring-2 focus:ring-indigo-500 placeholder-gray-600">
 
             <!-- Paper Autocomplete Dropdown List -->
             <div x-show="showPaperDropdown && filteredPapers.length > 0" @click.away="showPaperDropdown = false" class="absolute left-0 right-0 top-full mt-1 z-30 max-h-56 overflow-y-auto rounded-xl bg-gray-900 border border-gray-700 shadow-2xl divide-y divide-gray-800 text-xs">
@@ -166,9 +174,9 @@
           </div>
 
           <template x-if="form.paper_title">
-            <div class="text-xs text-emerald-400 flex items-center space-x-1.5 pt-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span class="truncate" x-text="'Selected: ' + form.paper_title"></span>
+            <div class="text-xs text-emerald-400 flex items-center space-x-1.5 pt-1 font-semibold">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              <span class="truncate" x-text="'Paper Terpilih: ' + form.paper_title"></span>
             </div>
           </template>
         </div>
@@ -247,6 +255,7 @@
         videoStream: null,
         resultMessage: '',
         checkInId: '',
+        claimCode: '',
 
         eventInfo: { event_name: '', event_date: '', location: '', description: '', papers: [] },
         paperSearch: '',
@@ -256,7 +265,7 @@
         form: {
           full_name: '',
           institution: '',
-          role: 'Presenter',
+          role: 'Participant', // Default Participant
           paper_id: null,
           paper_title: '',
           photo_base64: '',
@@ -343,7 +352,7 @@
         },
 
         onRoleChange() {
-          if (this.form.role !== 'Presenter' && this.form.role !== 'Author') {
+          if (this.form.role !== 'Presenter') {
             this.form.paper_id = null;
             this.form.paper_title = '';
             this.paperSearch = '';
@@ -377,6 +386,10 @@
             alert('Please take a live photo using your camera before submitting.');
             return;
           }
+          if (this.form.role === 'Presenter' && !this.form.paper_title) {
+            alert('Silakan pilih judul paper yang Anda presentasikan.');
+            return;
+          }
           this.submitting = true;
 
           try {
@@ -391,6 +404,7 @@
 
             this.resultMessage = data.message;
             this.checkInId = data.check_in_id;
+            this.claimCode = data.claim_code || '';
             this.submitted = true;
 
             // Stop camera stream to free hardware
