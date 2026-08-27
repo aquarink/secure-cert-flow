@@ -978,7 +978,7 @@
           }
           // Prevent duplicate fields
           if (this.templateFields.some(f => f.field_key.toLowerCase() === cleanKey.toLowerCase())) {
-            alert(`Parameter {{${cleanKey}}} sudah ada di kanvas.`);
+            alert('Parameter ' + cleanKey + ' sudah ada di kanvas.');
             return;
           }
           this.templateFields.push({
