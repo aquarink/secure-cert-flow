@@ -1,7 +1,7 @@
 """
 Public-Facing Claiming and Verification System
 Allows participants to verify authentic certificates via 8-char code or QR scan.
-Supports Instant On-Demand Rendering.
+Supports Instant On-Demand Rendering and Panitia Release Controls.
 """
 
 from datetime import datetime, timezone
@@ -116,21 +116,28 @@ def verify_certificate(claim_code: str, db: Session = Depends(get_db)):
     if not cert:
         return CertificateVerificationResponse(
             is_valid=False,
+            is_cert_open=False,
             message="Kode sertifikat tidak ditemukan dalam sistem resmi kami. Waspada terhadap potensi pemalsuan!"
         )
 
+    p = cert.participant
+    ev = cert.event
+    is_open = bool(ev.is_cert_open) if ev else False
+
     # Ensure certificate image is ready
-    if not cert.image_url:
+    if not cert.image_url and ev and ev.template and ev.template.background_image_url:
         try:
             ensure_certificate_rendered(cert, db)
         except Exception:
             pass
 
-    p = cert.participant
-    ev = cert.event
+    msg = "Sertifikat RESMI dan ASLI terverifikasi pada sistem Secure Cert Flow."
+    if not is_open:
+        msg = "Data kehadiran & sertifikat Anda terverifikasi secara sah. Unduh sertifikat akan dibuka oleh panitia setelah sesi acara berakhir."
 
     return CertificateVerificationResponse(
         is_valid=True,
+        is_cert_open=is_open,
         certificate_number=cert.certificate_number,
         claim_code=cert.claim_code,
         participant_name=p.name if p else "",
@@ -139,10 +146,10 @@ def verify_certificate(claim_code: str, db: Session = Depends(get_db)):
         event_name=ev.name if ev else "",
         event_location=ev.location if ev else "",
         event_date=ev.event_date.strftime("%d %B %Y") if ev and ev.event_date else "",
-        image_url=f"/api/v1/claim/{cert.claim_code}/image",
-        checksum_sha256=cert.checksum_sha256,
+        image_url=f"/api/v1/claim/{cert.claim_code}/image" if is_open else None,
+        checksum_sha256=cert.checksum_sha256 if is_open else None,
         status=cert.status,
-        message="Sertifikat RESMI dan ASLI terverifikasi pada sistem Secure Cert Flow."
+        message=msg
     )
 
 
@@ -150,7 +157,6 @@ def verify_certificate(claim_code: str, db: Session = Depends(get_db)):
 def claim_certificate(request: ClaimRequest, db: Session = Depends(get_db)):
     """
     Public claiming endpoint: Participant enters 8-character unique claim code.
-    Marks certificate as CLAIMED and returns image preview & download links.
     """
     code_cleaned = request.claim_code.strip().upper()
     cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
@@ -159,6 +165,24 @@ def claim_certificate(request: ClaimRequest, db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=404,
             detail="Kode klaim tidak ditemukan. Pastikan 8 karakter alfanumerik sudah benar."
+        )
+
+    ev = cert.event
+    p = cert.participant
+    is_open = bool(ev.is_cert_open) if ev else False
+
+    if not is_open:
+        return ClaimResponse(
+            success=True,
+            is_cert_open=False,
+            message="Data kehadiran Anda telah tercatat sah! Unduh sertifikat resmi akan dibuka oleh panitia setelah acara berakhir.",
+            certificate_number=cert.certificate_number,
+            participant_name=p.name if p else "",
+            event_name=ev.name if ev else "",
+            event_date=ev.event_date.strftime("%d %B %Y") if ev and ev.event_date else "",
+            image_url=None,
+            download_url=None,
+            checksum_sha256=None
         )
 
     # Ensure on-demand render
@@ -171,11 +195,9 @@ def claim_certificate(request: ClaimRequest, db: Session = Depends(get_db)):
         cert.status = "CLAIMED"
         db.commit()
 
-    p = cert.participant
-    ev = cert.event
-
     return ClaimResponse(
         success=True,
+        is_cert_open=True,
         message="Sertifikat berhasil diklaim!",
         certificate_number=cert.certificate_number,
         participant_name=p.name if p else "",
@@ -206,6 +228,13 @@ def download_certificate(claim_code: str, db: Session = Depends(get_db)):
     cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
     if not cert:
         raise HTTPException(status_code=404, detail="Sertifikat tidak ditemukan.")
+
+    ev = cert.event
+    if ev and not ev.is_cert_open:
+        raise HTTPException(
+            status_code=403,
+            detail="Unduh sertifikat untuk acara ini belum dibuka oleh panitia. Harap menunggu hingga sesi acara selesai."
+        )
 
     data = ensure_certificate_rendered(cert, db)
     cert.download_count += 1
