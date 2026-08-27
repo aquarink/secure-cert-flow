@@ -444,23 +444,95 @@
 
   <!-- MODAL: Add Parameter Modal -->
   <div x-show="showAddParamModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-sm p-6 space-y-4">
-      <h3 class="text-base font-bold text-white">Bubuhkan Parameter Baru</h3>
-      <p class="text-xs text-gray-400">Beri nama parameter (misal: <em>nama, judulPaper, namaAcara, tanggalAcara, lokasiAcara, peran</em>).</p>
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+      <div>
+        <h3 class="text-base font-bold text-white">Bubuhkan Parameter ke Sertifikat</h3>
+        <p class="text-xs text-gray-400 mt-1">Pilih parameter standar yang otomatis terisi dari data Presensi & Paper, atau ketik nama kustom:</p>
+      </div>
+
+      <!-- Quick Preset Parameter Chips -->
+      <div class="space-y-1.5">
+        <label class="block text-[11px] font-bold text-indigo-400 uppercase tracking-wider">Pilih Cepat Sumber Data:</label>
+        <div class="grid grid-cols-2 gap-1.5 text-xs">
+          <button type="button" @click="newParam.key = 'namaLengkap'; newParam.size = 48" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">👤</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">namaLengkap</div>
+              <div class="text-[10px] text-gray-400">Nama Penerima</div>
+            </div>
+          </button>
+
+          <button type="button" @click="newParam.key = 'judulPaper'; newParam.size = 32" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">📑</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">judulPaper</div>
+              <div class="text-[10px] text-gray-400">Judul Paper/Karya</div>
+            </div>
+          </button>
+
+          <button type="button" @click="newParam.key = 'peran'; newParam.size = 28" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">🏷️</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">peran</div>
+              <div class="text-[10px] text-gray-400">Peran / Status</div>
+            </div>
+          </button>
+
+          <button type="button" @click="newParam.key = 'institusi'; newParam.size = 26" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">🏢</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">institusi</div>
+              <div class="text-[10px] text-gray-400">Institusi/Afiliasi</div>
+            </div>
+          </button>
+
+          <button type="button" @click="newParam.key = 'tanggalAcara'; newParam.size = 24" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">📅</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">tanggalAcara</div>
+              <div class="text-[10px] text-gray-400">Tanggal Acara</div>
+            </div>
+          </button>
+
+          <button type="button" @click="newParam.key = 'lokasiAcara'; newParam.size = 24" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">📍</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">lokasiAcara</div>
+              <div class="text-[10px] text-gray-400">Lokasi Acara</div>
+            </div>
+          </button>
+
+          <button type="button" @click="newParam.key = 'namaAcara'; newParam.size = 32" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">🏆</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">namaAcara</div>
+              <div class="text-[10px] text-gray-400">Nama Acara</div>
+            </div>
+          </button>
+
+          <button type="button" @click="newParam.key = 'kodePaper'; newParam.size = 24" class="p-2 rounded-xl bg-gray-950 hover:bg-indigo-600/30 border border-gray-800 hover:border-indigo-500 text-left transition flex items-center space-x-2">
+            <span class="text-indigo-400">🔢</span>
+            <div>
+              <div class="font-mono font-bold text-indigo-300">kodePaper</div>
+              <div class="text-[10px] text-gray-400">Kode Paper</div>
+            </div>
+          </button>
+        </div>
+      </div>
       
-      <div class="space-y-3 text-xs">
+      <div class="space-y-3 text-xs pt-2 border-t border-gray-800">
         <div>
-          <label class="block font-semibold text-gray-300 mb-1">Nama Parameter</label>
-          <input type="text" x-model="newParam.key" placeholder="misal: nama, judulPaper, peran, tanggalAcara" class="w-full px-3 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white font-mono text-xs focus:border-indigo-500">
+          <label class="block font-semibold text-gray-300 mb-1">Nama Parameter Terpilih / Kustom</label>
+          <input type="text" x-model="newParam.key" placeholder="misal: namaLengkap, judulPaper, peran, institusi" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white font-mono text-xs focus:border-indigo-500">
         </div>
         <div>
           <label class="block font-semibold text-gray-300 mb-1">Ukuran Font (px)</label>
-          <input type="number" x-model="newParam.size" class="w-full px-3 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
+          <input type="number" x-model="newParam.size" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
         </div>
       </div>
       <div class="flex justify-end space-x-2 pt-2">
-        <button type="button" @click="showAddParamModal = false" class="px-3.5 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs">Batal</button>
-        <button type="button" @click="confirmAddParam()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">Tempatkan di Kanvas</button>
+        <button type="button" @click="showAddParamModal = false" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs">Batal</button>
+        <button type="button" @click="confirmAddParam()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30">Tempatkan di Kanvas</button>
       </div>
     </div>
   </div>
