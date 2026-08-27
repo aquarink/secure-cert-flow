@@ -13,6 +13,7 @@ class ClaimRequest(BaseModel):
 class ClaimResponse(BaseModel):
     success: bool
     message: str
+    is_cert_open: bool = False
     certificate_number: Optional[str] = None
     participant_name: Optional[str] = None
     event_name: Optional[str] = None
