@@ -40,6 +40,10 @@ def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
     template_bytes = minio_service.download_bytes(t_bucket, t_obj)
 
     p = cert.participant
+    custom_data = p.custom_data if (p and p.custom_data and isinstance(p.custom_data, dict)) else {}
+    inst = custom_data.get("institution", "")
+    p_code = custom_data.get("paper_code", "")
+
     fields_config = [
         {
             "field_key": f.field_key,
@@ -53,20 +57,33 @@ def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
     ]
 
     dynamic_values = {
-        "nama_peserta": p.name if p else "",
+        # Participant & Attendance fields
         "namalengkap": p.name if p else "",
+        "nama_peserta": p.name if p else "",
         "nama": p.name if p else "",
+        "institusi": inst,
+        "institution": inst,
         "peran": p.role if p else "Participant",
         "role": p.role if p else "Participant",
-        "judul_paper": p.paper_title if p and p.paper_title else "",
+
+        # Paper catalog fields
         "judulpaper": p.paper_title if p and p.paper_title else "",
-        "nama_acara": event.name if event else "",
+        "judul_paper": p.paper_title if p and p.paper_title else "",
+        "kodepaper": p_code,
+        "kode_paper": p_code,
+
+        # Event fields
         "namaacara": event.name if event else "",
-        "tanggal_acara": event.event_date.strftime("%d %B %Y") if event and event.event_date else "",
+        "nama_acara": event.name if event else "",
         "tanggalacara": event.event_date.strftime("%d %B %Y") if event and event.event_date else "",
-        "lokasi_acara": event.location if event else "",
+        "tanggal_acara": event.event_date.strftime("%d %B %Y") if event and event.event_date else "",
         "lokasiacara": event.location if event else "",
+        "lokasi_acara": event.location if event else "",
+
+        # Meta fields
+        "nomorsertifikat": cert.certificate_number,
         "nomor_sertifikat": cert.certificate_number,
+        "kodeklaim": cert.claim_code,
         "kode_klaim": cert.claim_code,
     }
 
