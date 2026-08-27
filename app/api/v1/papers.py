@@ -1,11 +1,13 @@
 """
 Papers and Submissions API Router
-Handles conference paper catalog, search autocomplete, and paper management.
+Handles conference paper catalog, search autocomplete, bulk Excel import, and paper management.
 """
 
+import io
 import uuid
+import pandas as pd
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
@@ -98,6 +100,81 @@ def create_bulk_papers(
     db.commit()
     for p in created_papers:
         db.refresh(p)
+    return created_papers
+
+
+@router.post("/events/{event_id}/papers/upload-excel", response_model=List[PaperResponse], status_code=status.HTTP_201_CREATED)
+async def upload_papers_excel(
+    event_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Bulk imports papers from spreadsheet (.xlsx, .xls, .csv).
+    Automatically maps common column headers: title, paper_code, authors, presenter.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    contents = await file.read()
+    filename = file.filename.lower() if file.filename else "file.xlsx"
+
+    try:
+        if filename.endswith(".csv"):
+            df = pd.read_csv(io.BytesIO(contents))
+        else:
+            df = pd.read_excel(io.BytesIO(contents))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Gagal membaca file spreadsheet: {str(e)}")
+
+    if df.empty:
+        raise HTTPException(status_code=400, detail="File spreadsheet kosong.")
+
+    # Normalize column names for flexible matching
+    col_map = {}
+    for col in df.columns:
+        c_clean = str(col).strip().lower().replace(" ", "_").replace("-", "_")
+        if c_clean in ["title", "judul", "judul_paper", "paper_title", "article"]:
+            col_map["title"] = col
+        elif c_clean in ["code", "kode", "paper_code", "kode_paper", "id", "paper_id"]:
+            col_map["paper_code"] = col
+        elif c_clean in ["authors", "author", "penulis", "nama_penulis"]:
+            col_map["authors"] = col
+        elif c_clean in ["presenter", "presenter_name", "nama_presenter", "pembicara"]:
+            col_map["presenter_name"] = col
+
+    if "title" not in col_map:
+        raise HTTPException(
+            status_code=400,
+            detail="Kolom judul paper tidak ditemukan. Pastikan ada kolom bernama 'Judul Paper' atau 'Title'."
+        )
+
+    created_papers = []
+    for _, row in df.iterrows():
+        title_val = str(row[col_map["title"]]).strip() if pd.notna(row[col_map["title"]]) else ""
+        if not title_val or title_val.lower() == "nan":
+            continue
+
+        code_val = str(row[col_map["paper_code"]]).strip() if "paper_code" in col_map and pd.notna(row[col_map["paper_code"]]) else None
+        authors_val = str(row[col_map["authors"]]).strip() if "authors" in col_map and pd.notna(row[col_map["authors"]]) else None
+        presenter_val = str(row[col_map["presenter_name"]]).strip() if "presenter_name" in col_map and pd.notna(row[col_map["presenter_name"]]) else None
+
+        paper = Paper(
+            event_id=event_id,
+            paper_code=code_val,
+            title=title_val,
+            authors=authors_val,
+            presenter_name=presenter_val
+        )
+        db.add(paper)
+        created_papers.append(paper)
+
+    db.commit()
+    for p in created_papers:
+        db.refresh(p)
+
     return created_papers
 
 
