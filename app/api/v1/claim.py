@@ -1,6 +1,7 @@
 """
 Public-Facing Claiming and Verification System
 Allows participants to verify authentic certificates via 8-char code or QR scan.
+Supports Instant On-Demand Rendering.
 """
 
 from datetime import datetime, timezone
@@ -9,13 +10,98 @@ from fastapi.responses import StreamingResponse
 import io
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import Certificate, Participant, Event
+from app.models import Certificate, Participant, Event, Template
 from app.schemas.certificate import CertificateVerificationResponse
 from app.schemas.claim import ClaimRequest, ClaimResponse
 from app.services.minio_service import minio_service
+from app.services.cert_generator import cert_generator
 from app.config import settings
 
 router = APIRouter(tags=["Public Claim & Verification"])
+
+
+def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
+    """
+    Renders certificate on-demand if image is not yet cached in MinIO.
+    """
+    if cert.image_url:
+        try:
+            bucket, obj_name = cert.image_url.split("/", 1) if "/" in cert.image_url else (settings.MINIO_BUCKET_CERTIFICATES, cert.image_url)
+            return minio_service.download_bytes(bucket, obj_name)
+        except Exception:
+            pass
+
+    event = cert.event
+    template = event.template if event else None
+    if not template or not template.background_image_url:
+        raise HTTPException(status_code=400, detail="Template sertifikat untuk acara ini belum diunggah panitia.")
+
+    t_bucket, t_obj = template.background_image_url.split("/", 1) if "/" in template.background_image_url else (settings.MINIO_BUCKET_TEMPLATES, template.background_image_url)
+    template_bytes = minio_service.download_bytes(t_bucket, t_obj)
+
+    p = cert.participant
+    fields_config = [
+        {
+            "field_key": f.field_key,
+            "pos_x": f.pos_x,
+            "pos_y": f.pos_y,
+            "font_size": f.font_size,
+            "font_color": f.font_color or "#1E293B",
+            "text_align": f.text_align or "center"
+        }
+        for f in template.fields
+    ]
+
+    dynamic_values = {
+        "nama_peserta": p.name if p else "",
+        "namalengkap": p.name if p else "",
+        "nama": p.name if p else "",
+        "peran": p.role if p else "Participant",
+        "role": p.role if p else "Participant",
+        "judul_paper": p.paper_title if p and p.paper_title else "",
+        "judulpaper": p.paper_title if p and p.paper_title else "",
+        "nama_acara": event.name if event else "",
+        "namaacara": event.name if event else "",
+        "tanggal_acara": event.event_date.strftime("%d %B %Y") if event and event.event_date else "",
+        "tanggalacara": event.event_date.strftime("%d %B %Y") if event and event.event_date else "",
+        "lokasi_acara": event.location if event else "",
+        "lokasiacara": event.location if event else "",
+        "nomor_sertifikat": cert.certificate_number,
+        "kode_klaim": cert.claim_code,
+    }
+
+    qr_config = {
+        "url": f"{settings.APP_BASE_URL}/verify/{cert.claim_code}",
+        "pos_x": template.qr_x or (template.width - 220),
+        "pos_y": template.qr_y or (template.height - 220),
+        "size": template.qr_size or 150
+    }
+
+    cert_num_config = {
+        "number": cert.certificate_number,
+        "pos_x": template.cert_number_x or 100,
+        "pos_y": template.cert_number_y or (template.height - 100),
+        "font_size": template.cert_number_font_size or 24,
+        "color": template.cert_number_color or "#475569"
+    }
+
+    rendered_bytes, checksum = cert_generator.render(
+        template_bytes=template_bytes,
+        fields_config=fields_config,
+        dynamic_values=dynamic_values,
+        qr_config=qr_config,
+        cert_number_config=cert_num_config
+    )
+
+    out_obj = f"certs/{event.id}/{cert.claim_code}.png"
+    cert_url = minio_service.upload_bytes(settings.MINIO_BUCKET_CERTIFICATES, out_obj, rendered_bytes, "image/png")
+
+    cert.image_url = cert_url
+    cert.checksum_sha256 = checksum
+    cert.status = "GENERATED"
+    db.commit()
+
+    return rendered_bytes
 
 
 @router.get("/verify/{claim_code}", response_model=CertificateVerificationResponse)
@@ -33,13 +119,12 @@ def verify_certificate(claim_code: str, db: Session = Depends(get_db)):
             message="Kode sertifikat tidak ditemukan dalam sistem resmi kami. Waspada terhadap potensi pemalsuan!"
         )
 
-    if cert.status != "GENERATED" and cert.status != "CLAIMED":
-        return CertificateVerificationResponse(
-            is_valid=False,
-            certificate_number=cert.certificate_number,
-            status=cert.status,
-            message=f"Sertifikat sedang dalam status '{cert.status}' dan belum siap diverifikasi."
-        )
+    # Ensure certificate image is ready
+    if not cert.image_url:
+        try:
+            ensure_certificate_rendered(cert, db)
+        except Exception:
+            pass
 
     p = cert.participant
     ev = cert.event
@@ -76,17 +161,9 @@ def claim_certificate(request: ClaimRequest, db: Session = Depends(get_db)):
             detail="Kode klaim tidak ditemukan. Pastikan 8 karakter alfanumerik sudah benar."
         )
 
-    if cert.status == "PENDING" or cert.status == "PROCESSING":
-        raise HTTPException(
-            status_code=400,
-            detail="Sertifikat Anda sedang dalam proses generate di background queue. Silakan coba kembali dalam beberapa detik."
-        )
-
-    if cert.status == "FAILED":
-        raise HTTPException(
-            status_code=500,
-            detail=f"Terjadi kendala saat men-generate sertifikat: {cert.error_message}. Harap hubungi panitia."
-        )
+    # Ensure on-demand render
+    if not cert.image_url:
+        ensure_certificate_rendered(cert, db)
 
     # Mark as claimed if first time
     if not cert.claimed_at:
@@ -112,23 +189,14 @@ def claim_certificate(request: ClaimRequest, db: Session = Depends(get_db)):
 
 @router.get("/claim/{claim_code}/image")
 def get_certificate_image(claim_code: str, db: Session = Depends(get_db)):
-    """Streams certificate image directly from MinIO/Storage for public preview"""
+    """Streams certificate image directly with on-demand rendering"""
     code_cleaned = claim_code.strip().upper()
     cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
-    if not cert or not cert.image_url:
-        raise HTTPException(status_code=404, detail="Gambar sertifikat tidak ditemukan.")
+    if not cert:
+        raise HTTPException(status_code=404, detail="Sertifikat tidak ditemukan.")
 
-    if "/" in cert.image_url:
-        bucket, obj_name = cert.image_url.split("/", 1)
-    else:
-        bucket = settings.MINIO_BUCKET_CERTIFICATES
-        obj_name = cert.image_url
-
-    try:
-        data = minio_service.download_bytes(bucket, obj_name)
-        return Response(content=data, media_type="image/png")
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"File gambar gagal dimuat: {str(e)}")
+    data = ensure_certificate_rendered(cert, db)
+    return Response(content=data, media_type="image/png")
 
 
 @router.get("/claim/{claim_code}/download")
@@ -136,25 +204,16 @@ def download_certificate(claim_code: str, db: Session = Depends(get_db)):
     """Downloads certificate image attachment and increments download counter"""
     code_cleaned = claim_code.strip().upper()
     cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
-    if not cert or not cert.image_url:
+    if not cert:
         raise HTTPException(status_code=404, detail="Sertifikat tidak ditemukan.")
 
+    data = ensure_certificate_rendered(cert, db)
     cert.download_count += 1
     db.commit()
 
-    if "/" in cert.image_url:
-        bucket, obj_name = cert.image_url.split("/", 1)
-    else:
-        bucket = settings.MINIO_BUCKET_CERTIFICATES
-        obj_name = cert.image_url
-
-    try:
-        data = minio_service.download_bytes(bucket, obj_name)
-        safe_filename = f"Sertifikat_{cert.certificate_number}.png"
-        return StreamingResponse(
-            io.BytesIO(data),
-            media_type="image/png",
-            headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
-        )
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"File gagal diunduh: {str(e)}")
+    safe_filename = f"Sertifikat_{cert.certificate_number}.png"
+    return StreamingResponse(
+        io.BytesIO(data),
+        media_type="image/png",
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'}
+    )
