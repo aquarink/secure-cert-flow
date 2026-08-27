@@ -1,6 +1,6 @@
 """
 Seed Script for Generating Sample/Test Data
-Creates default organizer account, demo conference event, template layout, and sample certificates.
+Creates default organizer account, demo conference event, template layout, paper catalog, sample attendances, and certificates.
 
 Usage:
     python scripts/seed_demo.py
@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.database import SessionLocal, engine, Base
-from app.models import User, Event, Template, TemplateField, Participant, Certificate, Batch
+from app.models import User, Event, Template, TemplateField, Participant, Certificate, Batch, Paper, Attendance
 from app.services import hash_password, minio_service, cert_generator, generate_claim_code
 from app.config import settings
 
@@ -83,7 +83,7 @@ def seed_database():
         blank_img.save(img_buf, format="PNG", optimize=True)
         bg_bytes = img_buf.getvalue()
 
-        # Upload template to MinIO/local storage
+        # Upload template to storage
         bg_url = minio_service.upload_bytes(
             bucket_name=settings.MINIO_BUCKET_TEMPLATES,
             object_name=f"templates/{event.id}/demo_background.png",
@@ -112,7 +112,7 @@ def seed_database():
 
             # Add Template Dynamic Fields
             fields = [
-                TemplateField(template_id=template.id, field_key="nama", label="Nama Peserta", pos_x=canvas_w // 2, pos_y=450, font_size=52, font_color="#1E293B", text_align="center", is_required=True),
+                TemplateField(template_id=template.id, field_key="nama_peserta", label="Nama Peserta", pos_x=canvas_w // 2, pos_y=450, font_size=52, font_color="#1E293B", text_align="center", is_required=True),
                 TemplateField(template_id=template.id, field_key="peran", label="Peran", pos_x=canvas_w // 2, pos_y=660, font_size=36, font_color="#4F46E5", text_align="center", is_required=True),
                 TemplateField(template_id=template.id, field_key="judul_paper", label="Judul Paper", pos_x=canvas_w // 2, pos_y=770, font_size=28, font_color="#334155", text_align="center", is_required=False),
             ]
@@ -121,7 +121,101 @@ def seed_database():
             db.refresh(template)
             print(f"Configured Template Layout for Event {event.name}")
 
-        # 4. Create Sample Participants and Pre-generated Certificates with Fixed Claim Codes for Testing
+        # 4. Create Sample Conference Papers Catalog
+        sample_papers = [
+            {
+                "paper_code": "ICST-001",
+                "title": "Scalable Kafka Architecture for Enterprise Microservices",
+                "authors": "Dr. Ahmad Farhan, S.Kom., M.T.",
+                "presenter_name": "Dr. Ahmad Farhan"
+            },
+            {
+                "paper_code": "ICST-002",
+                "title": "Automated Fraud Detection in Academic Certificates using SHA-256 and QR Verification",
+                "authors": "Siti Nurhaliza, M.Cs., Prof. Alex Rivers",
+                "presenter_name": "Siti Nurhaliza, M.Cs."
+            },
+            {
+                "paper_code": "ICST-003",
+                "title": "Natural Language Processing for Multi-Lingual Conference Transcripts",
+                "authors": "Dr. Budi Pratama, Siti Aminah",
+                "presenter_name": "Dr. Budi Pratama"
+            }
+        ]
+
+        for p_data in sample_papers:
+            p_obj = db.query(Paper).filter(Paper.event_id == event.id, Paper.paper_code == p_data["paper_code"]).first()
+            if not p_obj:
+                p_obj = Paper(
+                    event_id=event.id,
+                    paper_code=p_data["paper_code"],
+                    title=p_data["title"],
+                    authors=p_data["authors"],
+                    presenter_name=p_data["presenter_name"]
+                )
+                db.add(p_obj)
+        db.commit()
+        print("Seeded Conference Papers Catalog.")
+
+        # 5. Create Sample Live Selfie Attendance Records
+        sample_selfie = Image.new("RGB", (320, 240), color=(40, 50, 70))
+        d_selfie = ImageDraw.Draw(sample_selfie)
+        d_selfie.ellipse([(110, 50), (210, 150)], fill=(200, 180, 160))
+        d_selfie.rectangle([(80, 150), (240, 240)], fill=(70, 90, 140))
+        d_selfie.text((160, 20), "LIVE VERIFIED SELFIE", fill=(255, 255, 255), anchor="mm")
+        s_buf = io.BytesIO()
+        sample_selfie.save(s_buf, format="JPEG")
+        selfie_bytes = s_buf.getvalue()
+
+        selfie_url = minio_service.upload_bytes(
+            bucket_name=settings.MINIO_BUCKET_CERTIFICATES,
+            object_name=f"attendances/{event.id}/demo_selfie.jpg",
+            data=selfie_bytes,
+            content_type="image/jpeg"
+        )
+
+        sample_attendances = [
+            {
+                "full_name": "Dr. Ahmad Farhan, S.Kom., M.T.",
+                "institution": "UIN Syarif Hidayatullah Jakarta",
+                "role": "Presenter",
+                "paper_title": "Scalable Kafka Architecture for Enterprise Microservices",
+                "lat": -6.3045,
+                "long": 106.7554,
+                "ip": "10.88.0.7"
+            },
+            {
+                "full_name": "Siti Nurhaliza, M.Cs.",
+                "institution": "FST UIN Syarif Hidayatullah",
+                "role": "Author",
+                "paper_title": "Automated Fraud Detection in Academic Certificates using SHA-256 and QR Verification",
+                "lat": -6.3042,
+                "long": 106.7558,
+                "ip": "10.88.0.12"
+            }
+        ]
+
+        for att_data in sample_attendances:
+            att = db.query(Attendance).filter(Attendance.event_id == event.id, Attendance.full_name == att_data["full_name"]).first()
+            if not att:
+                att = Attendance(
+                    event_id=event.id,
+                    full_name=att_data["full_name"],
+                    institution=att_data["institution"],
+                    role=att_data["role"],
+                    paper_title=att_data["paper_title"],
+                    photo_url=selfie_url,
+                    latitude=att_data["lat"],
+                    longitude=att_data["long"],
+                    accuracy_meters=10.5,
+                    ip_address=att_data["ip"],
+                    user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0"
+                )
+                db.add(att)
+        db.commit()
+        print("Seeded Sample Attendance Check-In Records.")
+
+        # 6. Create Pre-generated Certificates with Fixed Claim Codes
         sample_participants = [
             {
                 "name": "Dr. Ahmad Farhan, S.Kom., M.T.",
@@ -134,7 +228,7 @@ def seed_database():
                 "name": "Siti Nurhaliza, M.Cs.",
                 "email": "siti.nurhaliza@uinjkt.ac.id",
                 "role": "Author",
-                "paper_title": "Automated Fraud Detection in Academic Certificates",
+                "paper_title": "Automated Fraud Detection in Academic Certificates using SHA-256 and QR Verification",
                 "claim_code": "UINJ2026",
             },
             {
@@ -164,14 +258,13 @@ def seed_database():
             claim_code = p_data["claim_code"]
             cert_num = f"ICST-2026-{claim_code}"
 
-            # Render Certificate Image
             fields_config = [
-                {"field_key": "nama", "pos_x": canvas_w // 2, "pos_y": 450, "font_size": 52, "font_color": "#1E293B", "text_align": "center"},
+                {"field_key": "nama_peserta", "pos_x": canvas_w // 2, "pos_y": 450, "font_size": 52, "font_color": "#1E293B", "text_align": "center"},
                 {"field_key": "peran", "pos_x": canvas_w // 2, "pos_y": 660, "font_size": 36, "font_color": "#4F46E5", "text_align": "center"},
                 {"field_key": "judul_paper", "pos_x": canvas_w // 2, "pos_y": 770, "font_size": 28, "font_color": "#334155", "text_align": "center"},
             ]
             dynamic_vals = {
-                "nama": p.name,
+                "nama_peserta": p.name,
                 "peran": p.role,
                 "judul_paper": p.paper_title or "",
             }
@@ -224,7 +317,7 @@ def seed_database():
                 cert.checksum_sha256 = checksum
 
             db.commit()
-            print(f"Generated Demo Certificate -> Recipient: {p.name} | Claim Code: {claim_code} | Serial: {cert_num}")
+            print(f"Generated Demo Certificate -> Recipient: {p.name} | Claim Code: {claim_code}")
 
         print("\nDemo seed completed successfully!")
 
