@@ -102,8 +102,10 @@ class CertificateGenerator:
         Returns:
             Tuple of (output_image_bytes, sha256_checksum)
         """
-        # 1. Load background naked certificate image
+        # 1. Load background naked certificate image and standardize to 1920x1080
         base_image = Image.open(io.BytesIO(template_bytes)).convert("RGBA")
+        if base_image.size != (1920, 1080):
+            base_image = base_image.resize((1920, 1080), Image.Resampling.LANCZOS)
         canvas_width, canvas_height = base_image.size
         draw = ImageDraw.Draw(base_image)
 
