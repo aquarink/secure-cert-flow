@@ -64,6 +64,18 @@
           <span class="text-gray-500">Attendee Name</span>
           <span class="text-white font-bold font-sans" x-text="form.full_name"></span>
         </div>
+        <template x-if="form.email">
+          <div class="flex justify-between border-b border-gray-800/80 pb-2">
+            <span class="text-gray-500">Email</span>
+            <span class="text-indigo-300 font-sans" x-text="form.email"></span>
+          </div>
+        </template>
+        <template x-if="form.phone_number">
+          <div class="flex justify-between border-b border-gray-800/80 pb-2">
+            <span class="text-gray-500">WhatsApp / No. HP</span>
+            <span class="text-emerald-300 font-sans" x-text="form.phone_number"></span>
+          </div>
+        </template>
         <div class="flex justify-between border-b border-gray-800/80 pb-2">
           <span class="text-gray-500">Institution</span>
           <span class="text-gray-300 font-sans" x-text="form.institution"></span>
@@ -125,19 +137,34 @@
 
         <!-- 1. Name and Title -->
         <div class="space-y-2">
-          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Full Name with Academic Title <span class="text-rose-400">*</span></label>
-          <input type="text" x-model="form.full_name" required placeholder="e.g. Prof. Dr. Alex Rivers, M.Sc." class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Nama Lengkap & Gelar (Full Name) <span class="text-rose-400">*</span></label>
+          <input type="text" x-model="form.full_name" required placeholder="Contoh: Prof. Dr. Ahmad Farhan, M.Kom." class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
         </div>
 
-        <!-- 2. Institution -->
-        <div class="space-y-2">
-          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Institution / University / Organization <span class="text-rose-400">*</span></label>
-          <input type="text" x-model="form.institution" required placeholder="e.g. Faculty of Science & Technology, UIN Syarif Hidayatullah Jakarta" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+        <!-- 2. Email Aktif & Nomor WhatsApp/Telepon -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Email Aktif <span class="text-rose-400">*</span></label>
+            <input type="email" x-model="form.email" required placeholder="nama@email.com / ahmad@uinjkt.ac.id" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+            <p class="text-[10px] text-gray-500">Salinan sertifikat dan info klaim akan dikaitkan ke email ini.</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Nomor WhatsApp / HP Aktif <span class="text-rose-400">*</span></label>
+            <input type="tel" x-model="form.phone_number" required placeholder="081234567890 / +6281234567890" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+            <p class="text-[10px] text-gray-500">Nomor aktif untuk konfirmasi kepesertaan.</p>
+          </div>
         </div>
 
-        <!-- 3. Role Dropdown (Default: Participant) -->
+        <!-- 3. Institution -->
         <div class="space-y-2">
-          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Participation Role <span class="text-rose-400">*</span></label>
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Institusi / Universitas / Afiliasi <span class="text-rose-400">*</span></label>
+          <input type="text" x-model="form.institution" required placeholder="Contoh: Fakultas Sains dan Teknologi, UIN Syarif Hidayatullah Jakarta" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+        </div>
+
+        <!-- 4. Role Dropdown (Default: Participant) -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Peran Kepesertaan (Participation Role) <span class="text-rose-400">*</span></label>
           <select x-model="form.role" @change="onRoleChange()" required class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition">
             <option value="Participant">Participant / Attendee / Peserta</option>
             <option value="Presenter">Presenter (Oral / Parallel Session)</option>
@@ -264,6 +291,8 @@
 
         form: {
           full_name: '',
+          email: '',
+          phone_number: '',
           institution: '',
           role: 'Participant', // Default Participant
           paper_id: null,
