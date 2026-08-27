@@ -251,3 +251,89 @@ def get_event_template(
         raise HTTPException(status_code=404, detail="Template sertifikat untuk acara ini belum dibuat.")
 
     return event.template
+
+from fastapi import Response
+
+@router.post("/{event_id}/template/preview")
+def preview_template_layout(
+    event_id: uuid.UUID,
+    setup_data: TemplateSetupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Renders an instant live preview of the certificate layout with sample dummy values.
+    Returns the rendered image as a PNG stream.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    template = db.query(Template).filter(Template.event_id == event_id).first()
+    if not template or not template.background_image_url:
+        raise HTTPException(status_code=400, detail="Template sertifikat belum diunggah.")
+
+    t_bucket, t_obj = template.background_image_url.split("/", 1) if "/" in template.background_image_url else (settings.MINIO_BUCKET_TEMPLATES, template.background_image_url)
+    template_bytes = minio_service.download_bytes(t_bucket, t_obj)
+
+    # Convert incoming fields
+    fields_config = [
+        {
+            "field_key": f.field_key,
+            "pos_x": f.pos_x,
+            "pos_y": f.pos_y,
+            "font_size": f.font_size,
+            "font_color": f.font_color or "#1E293B",
+            "text_align": f.text_align or "center"
+        }
+        for f in (setup_data.fields or [])
+    ]
+
+    sample_values = {
+        "namalengkap": "Prof. Dr. Ahmad Farhan, M.Kom.",
+        "nama_peserta": "Prof. Dr. Ahmad Farhan, M.Kom.",
+        "nama": "Prof. Dr. Ahmad Farhan, M.Kom.",
+        "institusi": "Fakultas Sains dan Teknologi, UIN Syarif Hidayatullah Jakarta",
+        "institution": "Fakultas Sains dan Teknologi, UIN Syarif Hidayatullah Jakarta",
+        "peran": "Presenter",
+        "role": "Presenter",
+        "judulpaper": "AI-Driven Blockchain Security in Multi-Cloud Infrastructure",
+        "judul_paper": "AI-Driven Blockchain Security in Multi-Cloud Infrastructure",
+        "kodepaper": "ICST-026",
+        "kode_paper": "ICST-026",
+        "namaacara": event.name,
+        "nama_acara": event.name,
+        "tanggalacara": event.event_date.strftime("%d %B %Y") if event.event_date else "10 September 2026",
+        "tanggal_acara": event.event_date.strftime("%d %B %Y") if event.event_date else "10 September 2026",
+        "lokasiacara": event.location or "Surabaya, Indonesia",
+        "lokasi_acara": event.location or "Surabaya, Indonesia",
+        "nomorsertifikat": f"{event.name[:4].upper().replace(' ', 'C')}-2026-SAMPLE26",
+        "nomor_sertifikat": f"{event.name[:4].upper().replace(' ', 'C')}-2026-SAMPLE26",
+        "kodeklaim": "SAMPLE26",
+        "kode_klaim": "SAMPLE26",
+    }
+
+    qr_config = {
+        "url": f"{settings.APP_BASE_URL}/verify/SAMPLE26",
+        "pos_x": setup_data.qr_x or (template.width - 220),
+        "pos_y": setup_data.qr_y or (template.height - 220),
+        "size": setup_data.qr_size or 150
+    }
+
+    cert_num_config = {
+        "number": f"{event.name[:4].upper().replace(' ', 'C')}-2026-SAMPLE26",
+        "pos_x": setup_data.cert_number_x or 100,
+        "pos_y": setup_data.cert_number_y or (template.height - 100),
+        "font_size": setup_data.cert_number_font_size or 24,
+        "color": setup_data.cert_number_color or "#475569"
+    }
+
+    rendered_bytes, _ = cert_generator.render(
+        template_bytes=template_bytes,
+        fields_config=fields_config,
+        dynamic_values=sample_values,
+        qr_config=qr_config,
+        cert_number_config=cert_num_config
+    )
+
+    return Response(content=rendered_bytes, media_type="image/png")
