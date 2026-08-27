@@ -89,6 +89,49 @@ def favicon():
     return HTMLResponse(status_code=404)
 
 
+@app.get("/robots.txt", response_class=Response, tags=["SEO"])
+def robots_txt():
+    """Search engine crawlers directive"""
+    content = """User-agent: *
+Allow: /
+Allow: /claim
+Allow: /verify/
+Disallow: /dashboard
+Disallow: /api/
+
+Sitemap: https://sertifikat.uinjakarta.id/sitemap.xml
+"""
+    return Response(content=content, media_type="text/plain")
+
+
+@app.get("/sitemap.xml", response_class=Response, tags=["SEO"])
+def sitemap_xml():
+    """XML Sitemap for Google, Bing, and search engines indexing"""
+    content = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://sertifikat.uinjakarta.id/</loc>
+    <lastmod>2026-08-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://sertifikat.uinjakarta.id/claim</loc>
+    <lastmod>2026-08-27</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://sertifikat.uinjakarta.id/login</loc>
+    <lastmod>2026-08-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>
+"""
+    return Response(content=content, media_type="application/xml")
+
+
 @app.get("/health", tags=["System"])
 def health_check():
     """Health check endpoint for monitoring"""
