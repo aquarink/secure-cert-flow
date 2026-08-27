@@ -1,6 +1,6 @@
 """
 Event Management Endpoints
-Handles event creation, updating, listing, and configuration for organizers.
+Handles event creation, updating, listing, certificate release toggle, and configuration for organizers.
 Supports conferences, webinars, workshops, competitions, and general events.
 """
 
@@ -42,6 +42,7 @@ def list_events(
             "event_date": ev.event_date,
             "description": ev.description,
             "status": ev.status,
+            "is_cert_open": bool(ev.is_cert_open),
             "created_at": ev.created_at,
             "updated_at": ev.updated_at,
             "participant_count": p_count,
@@ -66,7 +67,8 @@ def create_event(
         location=event_in.location,
         event_date=event_in.event_date,
         description=event_in.description,
-        status="draft"
+        status="draft",
+        is_cert_open=bool(event_in.is_cert_open)
     )
     db.add(event)
     db.commit()
@@ -81,6 +83,7 @@ def create_event(
         "event_date": event.event_date,
         "description": event.description,
         "status": event.status,
+        "is_cert_open": event.is_cert_open,
         "created_at": event.created_at,
         "updated_at": event.updated_at,
         "participant_count": 0,
@@ -114,6 +117,7 @@ def get_event(
         "event_date": event.event_date,
         "description": event.description,
         "status": event.status,
+        "is_cert_open": bool(event.is_cert_open),
         "created_at": event.created_at,
         "updated_at": event.updated_at,
         "participant_count": p_count,
@@ -153,10 +157,34 @@ def update_event(
         "event_date": event.event_date,
         "description": event.description,
         "status": event.status,
+        "is_cert_open": bool(event.is_cert_open),
         "created_at": event.created_at,
         "updated_at": event.updated_at,
         "participant_count": p_count,
         "certificate_count": c_count,
+    }
+
+
+@router.post("/{event_id}/toggle-cert-release")
+def toggle_certificate_release(
+    event_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Toggles certificate download release for participants (Organizer only)"""
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    event.is_cert_open = not event.is_cert_open
+    db.commit()
+    db.refresh(event)
+
+    status_str = "DIBUKA (Peserta dapat mengunduh sertifikat)" if event.is_cert_open else "DIKUNCI (Unduh sertifikat ditutup)"
+    return {
+        "event_id": event.id,
+        "is_cert_open": event.is_cert_open,
+        "message": f"Akses unduh sertifikat untuk '{event.name}' sekarang {status_str}."
     }
 
 
