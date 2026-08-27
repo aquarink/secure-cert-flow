@@ -122,6 +122,8 @@ def submit_attendance_check_in(
         event_id=event_id,
         paper_id=check_in.paper_id,
         full_name=check_in.full_name.strip(),
+        email=check_in.email.strip() if check_in.email else None,
+        phone_number=check_in.phone_number.strip() if check_in.phone_number else None,
         institution=check_in.institution.strip(),
         role=check_in.role.strip() if check_in.role else "Participant",
         paper_title=final_paper_title.strip() if final_paper_title else None,
@@ -148,11 +150,12 @@ def submit_attendance_check_in(
     participant = Participant(
         event_id=event_id,
         name=attendance.full_name,
-        email=f"attendee_{attendance.id.hex[:6]}@uinjkt.ac.id",
+        email=attendance.email if attendance.email else f"attendee_{attendance.id.hex[:6]}@uinjkt.ac.id",
         role=attendance.role,
         paper_title=attendance.paper_title,
         custom_data={
             "institution": attendance.institution,
+            "phone_number": attendance.phone_number or "",
             "attendance_id": str(attendance.id)
         }
     )
@@ -187,7 +190,7 @@ def submit_attendance_check_in(
 def list_event_attendances(
     event_id: uuid.UUID,
     role: Optional[str] = Query(None, description="Filter by role"),
-    q: Optional[str] = Query(None, description="Search name, institution, or paper title"),
+    q: Optional[str] = Query(None, description="Search name, email, phone, institution, or paper title"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -205,6 +208,8 @@ def list_event_attendances(
         search_pattern = f"%{q.strip()}%"
         query = query.filter(
             (Attendance.full_name.ilike(search_pattern)) |
+            (Attendance.email.ilike(search_pattern)) |
+            (Attendance.phone_number.ilike(search_pattern)) |
             (Attendance.institution.ilike(search_pattern)) |
             (Attendance.paper_title.ilike(search_pattern)) |
             (Attendance.ip_address.ilike(search_pattern))
@@ -230,6 +235,8 @@ def list_event_attendances(
             "event_id": att.event_id,
             "paper_id": att.paper_id,
             "full_name": att.full_name,
+            "email": att.email,
+            "phone_number": att.phone_number,
             "institution": att.institution,
             "role": att.role,
             "paper_title": att.paper_title,
