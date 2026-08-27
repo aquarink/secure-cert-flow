@@ -1,28 +1,33 @@
 """
 Authentication and Cryptographic Security Services
-Handles password hashing, JWT encoding/decoding, and verification tokens.
+Handles native bcrypt password hashing, JWT encoding/decoding, and verification tokens.
 """
 
+import bcrypt
 import secrets
 import string
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from app.config import settings
-
-# Password hashing context using bcrypt
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
-    """Hashes plain password using bcrypt algorithm"""
-    return pwd_context.hash(password)
+    """Hashes plain password using native bcrypt algorithm"""
+    pwd_bytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verifies a plain password against the stored bcrypt hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verifies a plain password against stored bcrypt hash string"""
+    try:
+        return bcrypt.checkpw(
+            plain_password.encode("utf-8"),
+            hashed_password.encode("utf-8")
+        )
+    except Exception:
+        return False
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
