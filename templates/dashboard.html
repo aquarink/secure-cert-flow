@@ -270,7 +270,7 @@
                      @mouseup="onCanvasMouseUp()"
                      @mouseleave="onCanvasMouseUp()"
                      class="relative w-full max-w-[680px] aspect-[16/9] bg-slate-900 border-2 border-dashed border-indigo-500/30 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center select-none"
-                     :style="templateBgUrl ? 'background-image: url(' + templateBgUrl + '); background-size: cover; background-position: center;' : ''">
+                     :style="templateBgUrl ? 'background-image: url(' + templateBgUrl + '); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;' : ''">
 
                   <div x-show="!templateBgUrl" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-25 space-y-1">
                     <span class="text-4xl font-serif text-gray-400 font-bold tracking-widest">SERTIFIKAT</span>
