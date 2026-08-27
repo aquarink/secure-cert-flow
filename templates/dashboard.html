@@ -191,7 +191,7 @@
                         <div class="space-y-0.5">
                           <div class="flex items-center space-x-2">
                             <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-                            <span class="font-mono font-bold text-sm text-indigo-300" x-text="'{{' + field.field_key + '}}'"></span>
+                            <span class="font-mono font-bold text-sm text-indigo-300" x-text="'\u007B\u007B' + field.field_key + '\u007D\u007D'"></span>
                           </div>
                           <p class="text-[11px] text-gray-400" x-text="'Ukuran Font: ' + field.font_size + 'px • Geser pada kanvas'"></p>
                         </div>
@@ -239,7 +239,7 @@
                          class="canvas-box absolute px-3 py-1.5 rounded-lg font-bold text-xs shadow-lg transition-shadow"
                          :class="draggedIndex === idx ? 'bg-indigo-600 text-white ring-2 ring-white scale-105 z-30' : 'bg-indigo-950/90 border border-indigo-400/80 text-indigo-200 hover:bg-indigo-900 z-10'"
                          :style="'left: ' + ((field.pos_x / 1920) * 100) + '%; top: ' + ((field.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(10, Math.round(field.font_size * 0.28)) + 'px;'"
-                         x-text="'{{' + field.field_key + '}}'">
+                         x-text="'\u007B\u007B' + field.field_key + '\u007D\u007D'">
                     </div>
                   </template>
 
