@@ -1,0 +1,253 @@
+"""
+Template & Placement Setup Endpoints
+Handles naked certificate upload, signature upload, and visual coordinate configuration.
+"""
+
+import uuid
+import io
+from PIL import Image
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
+from sqlalchemy.orm import Session
+from app.database import get_db
+from app.models import Event, Template, TemplateField, User
+from app.schemas.template import TemplateResponse, TemplateSetupRequest
+from app.services.minio_service import minio_service
+from app.api.deps import get_current_user
+from app.config import settings
+
+router = APIRouter(prefix="/events", tags=["Templates & Placement Setup"])
+
+
+@router.post("/{event_id}/template/upload-background", response_model=TemplateResponse)
+async def upload_background_template(
+    event_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Uploads a blank certificate background image (naked certificate) to MinIO.
+    Detects image resolution (width x height) automatically.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    if not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File harus berupa gambar (PNG/JPG/JPEG).")
+
+    file_bytes = await file.read()
+    try:
+        pil_img = Image.open(io.BytesIO(file_bytes))
+        width, height = pil_img.size
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"File gambar tidak valid: {str(e)}")
+
+    # Upload to MinIO
+    ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+    object_name = f"templates/{event_id}/background.{ext}"
+    stored_path = minio_service.upload_bytes(
+        bucket_name=settings.MINIO_BUCKET_TEMPLATES,
+        object_name=object_name,
+        data=file_bytes,
+        content_type=file.content_type
+    )
+
+    template = db.query(Template).filter(Template.event_id == event_id).first()
+    if not template:
+        template = Template(
+            event_id=event_id,
+            background_image_url=stored_path,
+            width=width,
+            height=height,
+            qr_x=width - 200,
+            qr_y=height - 200,
+            qr_size=150,
+            cert_number_x=100,
+            cert_number_y=height - 100,
+        )
+        db.add(template)
+        db.flush()
+
+        # Seed standard dynamic fields: nama, judul_paper, peran
+        default_fields = [
+            TemplateField(
+                template_id=template.id,
+                field_key="nama",
+                label="Nama Peserta",
+                pos_x=width // 2,
+                pos_y=int(height * 0.45),
+                font_size=48,
+                font_color="#1E293B",
+                text_align="center",
+                is_required=True
+            ),
+            TemplateField(
+                template_id=template.id,
+                field_key="peran",
+                label="Peran / Status",
+                pos_x=width // 2,
+                pos_y=int(height * 0.55),
+                font_size=32,
+                font_color="#475569",
+                text_align="center",
+                is_required=True
+            ),
+            TemplateField(
+                template_id=template.id,
+                field_key="judul_paper",
+                label="Judul Makalah / Paper",
+                pos_x=width // 2,
+                pos_y=int(height * 0.65),
+                font_size=28,
+                font_color="#334155",
+                text_align="center",
+                is_required=False
+            ),
+        ]
+        db.add_all(default_fields)
+    else:
+        template.background_image_url = stored_path
+        template.width = width
+        template.height = height
+
+    db.commit()
+    db.refresh(template)
+    return template
+
+
+@router.post("/{event_id}/template/upload-signature", response_model=TemplateResponse)
+async def upload_signature(
+    event_id: uuid.UUID,
+    file: UploadFile = File(...),
+    pos_x: int = Form(default=200),
+    pos_y: int = Form(default=800),
+    width: int = Form(default=220),
+    height: int = Form(default=110),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Uploads a transparent PNG signature and sets its coordinates.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    template = db.query(Template).filter(Template.event_id == event_id).first()
+    if not template:
+        raise HTTPException(
+            status_code=400,
+            detail="Harap unggah background sertifikat terlebih dahulu sebelum menambahkan tanda tangan.",
+        )
+
+    file_bytes = await file.read()
+    ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+    object_name = f"signatures/{event_id}/signature.{ext}"
+
+    stored_path = minio_service.upload_bytes(
+        bucket_name=settings.MINIO_BUCKET_SIGNATURES,
+        object_name=object_name,
+        data=file_bytes,
+        content_type=file.content_type or "image/png"
+    )
+
+    template.signature_image_url = stored_path
+    template.signature_x = pos_x
+    template.signature_y = pos_y
+    template.signature_width = width
+    template.signature_height = height
+
+    db.commit()
+    db.refresh(template)
+    return template
+
+
+@router.post("/{event_id}/template/setup", response_model=TemplateResponse)
+def setup_template_layout(
+    event_id: uuid.UUID,
+    setup_data: TemplateSetupRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Saves visual coordinates for dynamic text fields, QR Code, and Auto-numbering.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    template = db.query(Template).filter(Template.event_id == event_id).first()
+    if not template:
+        raise HTTPException(status_code=400, detail="Template belum diinisialisasi. Unggah gambar background dahulu.")
+
+    # Update template coordinate fields
+    if setup_data.width:
+        template.width = setup_data.width
+    if setup_data.height:
+        template.height = setup_data.height
+    if setup_data.signature_x is not None:
+        template.signature_x = setup_data.signature_x
+    if setup_data.signature_y is not None:
+        template.signature_y = setup_data.signature_y
+    if setup_data.signature_width is not None:
+        template.signature_width = setup_data.signature_width
+    if setup_data.signature_height is not None:
+        template.signature_height = setup_data.signature_height
+    if setup_data.qr_x is not None:
+        template.qr_x = setup_data.qr_x
+    if setup_data.qr_y is not None:
+        template.qr_y = setup_data.qr_y
+    if setup_data.qr_size is not None:
+        template.qr_size = setup_data.qr_size
+    if setup_data.cert_number_prefix:
+        template.cert_number_prefix = setup_data.cert_number_prefix
+    if setup_data.cert_number_x is not None:
+        template.cert_number_x = setup_data.cert_number_x
+    if setup_data.cert_number_y is not None:
+        template.cert_number_y = setup_data.cert_number_y
+    if setup_data.cert_number_font_size:
+        template.cert_number_font_size = setup_data.cert_number_font_size
+    if setup_data.cert_number_color:
+        template.cert_number_color = setup_data.cert_number_color
+
+    # Update dynamic field coordinates
+    if setup_data.fields is not None:
+        # Delete old fields and replace with updated coordinates
+        db.query(TemplateField).filter(TemplateField.template_id == template.id).delete()
+        for f in setup_data.fields:
+            new_field = TemplateField(
+                template_id=template.id,
+                field_key=f.field_key.strip().lower(),
+                label=f.label,
+                pos_x=f.pos_x,
+                pos_y=f.pos_y,
+                font_family=f.font_family,
+                font_size=f.font_size,
+                font_color=f.font_color,
+                text_align=f.text_align,
+                max_width=f.max_width,
+                is_required=f.is_required
+            )
+            db.add(new_field)
+
+    db.commit()
+    db.refresh(template)
+    return template
+
+
+@router.get("/{event_id}/template", response_model=TemplateResponse)
+def get_event_template(
+    event_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Retrieves current certificate layout template configuration"""
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    if not event.template:
+        raise HTTPException(status_code=404, detail="Template sertifikat untuk acara ini belum dibuat.")
+
+    return event.template
