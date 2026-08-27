@@ -58,3 +58,6 @@ temp/
 .idea/
 .vscode/
 Thumbs.db
+
+# Extracted template archive folder
+tailadmin-free-tailwind-dashboard-template-main/
