@@ -21,6 +21,7 @@ class Event(Base):
     event_date = Column(Date, nullable=False, index=True)
     description = Column(Text, nullable=True)
     status = Column(String(50), default="draft", nullable=False)
+    cert_prefix = Column(String(50), nullable=True)  # Custom prefix for certificate serial number (e.g. CITSM2026 or CITSM-2026)
     is_cert_open = Column(Boolean, default=False, nullable=False)  # Panitia toggle to release certificate download
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
