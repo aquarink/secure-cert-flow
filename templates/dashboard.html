@@ -147,6 +147,7 @@
       </div>
 
       <!-- =================================================================== -->
+      <!-- =================================================================== -->
       <!-- TAB 2: TEMPLATE & VISUAL DRAG & DROP PLACEMENT                     -->
       <!-- =================================================================== -->
       <div x-show="activeTab === 'designer'" x-cloak class="space-y-6">
@@ -154,9 +155,9 @@
           <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             <div>
               <h2 class="text-xl font-bold text-white">Visual Template & Penempatan</h2>
-              <p class="text-sm text-gray-400">Unggah template sertifikat, atur tata letak parameter teks, QR Code/Barcode, dan Nomor Seri secara bebas di atas kanvas.</p>
+              <p class="text-sm text-gray-400">Kelola multiple template per acara (cth: Presenter, Peserta, Authors), atur koordinat parameter teks, QR Code/Barcode, dan warna via Color Picker atau Kode HEX.</p>
             </div>
-            <select x-model="selectedEventId" @change="loadEventTemplate()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
+            <select x-model="selectedEventId" @change="loadEventTemplates()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
               <option value="">-- Pilih Acara --</option>
               <template x-for="ev in events" :key="ev.id">
                 <option :value="ev.id" x-text="ev.name"></option>
@@ -165,179 +166,238 @@
           </div>
 
           <template x-if="selectedEventId">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <!-- Sidebar Controls -->
-              <div class="space-y-4">
-                <div class="p-4 rounded-xl bg-gray-800/80 border border-gray-700">
-                  <label class="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Template Sertifikat</label>
-                  <input type="file" @change="uploadBackground($event)" accept="image/*" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
-                  <p class="text-[11px] text-gray-400 mt-2" x-text="templateBgUrl ? '✓ Template aktif terpasang' : 'Unggah file gambar sertifikat kosong (.png / .jpg)'"></p>
-                </div>
-
-                <!-- Parameter Penempatan (Clean List) -->
-                <div class="p-4 rounded-xl bg-gray-800/80 border border-gray-700 space-y-3" :class="!templateBgUrl ? 'opacity-50 pointer-events-none' : ''">
-                  <div class="flex justify-between items-center">
-                    <div>
-                      <h3 class="text-xs font-bold text-white uppercase tracking-wider">Parameter Penempatan</h3>
-                      <p class="text-[10px] text-gray-400">Daftar elemen aktif pada kanvas</p>
-                    </div>
-                    <button type="button" @click="openAddParamModal()" :disabled="!templateBgUrl" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold text-xs flex items-center space-x-1 transition shadow-md">
-                      <span>+ Tambah / Bubuhkan</span>
+            <div class="space-y-4">
+              <!-- Multi-Template Switcher Bar -->
+              <div class="flex items-center justify-between border-b border-gray-800 pb-3 flex-wrap gap-2">
+                <div class="flex items-center space-x-2 overflow-x-auto py-1">
+                  <template x-for="tpl in eventTemplates" :key="tpl.id">
+                    <button type="button" @click="switchTemplate(tpl)"
+                            class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-2 border"
+                            :class="activeTemplateId === tpl.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-600/30' : 'bg-gray-800/90 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white'">
+                      <span x-text="tpl.name || 'Template'"></span>
+                      <span x-show="tpl.is_default" class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">DEFAULT</span>
+                      <span x-show="tpl.role_target && tpl.role_target !== 'ALL'" class="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30" x-text="tpl.role_target"></span>
                     </button>
-                  </div>
-                  
-                  <!-- Clean List of Active Parameters with exact field names -->
-                  <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
-
-                    <!-- Fixed Draggable QR Code Item -->
-                    <div class="p-3 rounded-xl bg-gray-900 border border-indigo-500/40 flex items-center justify-between hover:border-indigo-400 transition">
-                      <div class="space-y-0.5">
-                        <div class="flex items-center space-x-2">
-                          <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-                          <span class="font-mono font-bold text-sm text-indigo-300">QR Code / Barcode</span>
-                        </div>
-                        <p class="text-[11px] text-gray-400" x-text="'Ukuran: ' + qrConfig.size + 'px • Geser pada kanvas'"></p>
-                      </div>
-                      <div class="flex items-center space-x-1.5">
-                        <button type="button" @click="adjustQrSize(-15)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan QR">-</button>
-                        <span class="text-xs font-mono font-semibold text-indigo-300 w-11 text-center" x-text="qrConfig.size + 'px'"></span>
-                        <button type="button" @click="adjustQrSize(15)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan QR">+</button>
-                      </div>
-                    </div>
-
-                    <!-- Fixed Draggable Cert Serial Number Item -->
-                    <div class="p-3.5 rounded-2xl bg-gray-900 border border-gray-700/80 space-y-2 hover:border-amber-500/50 transition">
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                          <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                          <span class="font-mono font-bold text-xs text-amber-300">Nomor Seri / Kode Unik</span>
-                        </div>
-                        <div class="flex items-center space-x-1.5">
-                          <input type="color" x-model="certNumConfig.color" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="Pilih Warna Nomor Seri">
-                          <button type="button" @click="adjustCertNumFontSize(-4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan Font">-</button>
-                          <span class="text-xs font-mono font-semibold text-amber-300 w-8 text-center" x-text="certNumConfig.font_size + 'px'"></span>
-                          <button type="button" @click="adjustCertNumFontSize(4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan Font">+</button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- Dynamic Parameters List with Font Family & Color Customizers -->
-                    <template x-for="(field, idx) in templateFields" :key="field.field_key">
-                      <div class="p-3.5 rounded-2xl bg-gray-900 border border-gray-700/80 space-y-2.5 hover:border-indigo-500/50 transition">
-                        <div class="flex items-center justify-between">
-                          <div class="flex items-center space-x-2">
-                            <span class="w-2.5 h-2.5 rounded-full" :style="'background-color: ' + (field.font_color || '#818CF8')"></span>
-                            <span class="font-mono font-bold text-xs text-indigo-300" x-text="'\u007B\u007B' + field.field_key + '\u007D\u007D'"></span>
-                          </div>
-                          <button type="button" @click="removeField(idx)" class="p-1 rounded-lg hover:bg-red-900/40 text-gray-500 hover:text-red-400 transition" title="Hapus Parameter">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                          </button>
-                        </div>
-
-                        <!-- Controls Row: Font Family, Size Stepper, Color Picker -->
-                        <div class="grid grid-cols-12 gap-1.5 items-center text-xs">
-                          <!-- Font Family Selector -->
-                          <div class="col-span-7">
-                            <select x-model="field.font_family" class="w-full px-2 py-1.5 rounded-lg bg-gray-950 border border-gray-700 text-white text-[11px] font-medium focus:border-indigo-500">
-                              <option value="Cinzel-Bold.ttf">👑 Cinzel (Royal Serif)</option>
-                              <option value="LiberationSerif-Bold.ttf">🏛️ Times / Formal Serif</option>
-                              <option value="GreatVibes-Regular.ttf">🖋️ Great Vibes (Kaligrafi)</option>
-                              <option value="AlexBrush-Regular.ttf">✍️ Alex Brush (Signature)</option>
-                              <option value="Montserrat-Bold.ttf">📐 Montserrat (Modern Sans)</option>
-                              <option value="Roboto-Bold.ttf">🔤 Roboto (Clean Sans)</option>
-                              <option value="LiberationMono-Bold.ttf">💻 Monospace (Kode)</option>
-                            </select>
-                          </div>
-
-                          <!-- Font Size Stepper -->
-                          <div class="col-span-4 flex items-center justify-between bg-gray-950 px-1 py-1 rounded-lg border border-gray-800">
-                            <button type="button" @click="adjustFieldFontSize(field, -4)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[10px] font-bold text-gray-300 flex items-center justify-center transition">-</button>
-                            <span class="text-[11px] font-mono font-bold text-indigo-300" x-text="field.font_size + 'px'"></span>
-                            <button type="button" @click="adjustFieldFontSize(field, 4)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[10px] font-bold text-gray-300 flex items-center justify-center transition">+</button>
-                          </div>
-
-                          <!-- Color Picker Input -->
-                          <div class="col-span-1 flex justify-center">
-                            <input type="color" x-model="field.font_color" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="Ubah Warna Font">
-                          </div>
-                        </div>
-
-                        <!-- Quick Color Palette Preset Chips -->
-                        <div class="flex items-center space-x-1.5 pt-0.5">
-                          <button type="button" @click="field.font_color = '#0F172A'" class="w-4 h-4 rounded-full bg-slate-900 border border-gray-600 hover:scale-125 transition" title="Hitam / Gelap (#0F172A)"></button>
-                          <button type="button" @click="field.font_color = '#B45309'" class="w-4 h-4 rounded-full bg-amber-600 border border-amber-400 hover:scale-125 transition" title="Gold / Emas (#B45309)"></button>
-                          <button type="button" @click="field.font_color = '#1E3A8A'" class="w-4 h-4 rounded-full bg-blue-900 border border-blue-500 hover:scale-125 transition" title="Navy / Biru (#1E3A8A)"></button>
-                          <button type="button" @click="field.font_color = '#991B1B'" class="w-4 h-4 rounded-full bg-red-800 border border-red-500 hover:scale-125 transition" title="Maroon (#991B1B)"></button>
-                          <button type="button" @click="field.font_color = '#065F46'" class="w-4 h-4 rounded-full bg-emerald-800 border border-emerald-500 hover:scale-125 transition" title="Emerald / Hijau (#065F46)"></button>
-                          <button type="button" @click="field.font_color = '#FFFFFF'" class="w-4 h-4 rounded-full bg-white border border-gray-400 hover:scale-125 transition" title="Putih (#FFFFFF)"></button>
-                        </div>
-                      </div>
-                    </template>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-2 pt-1">
-                    <button type="button" @click="openLivePreview()" :disabled="!templateBgUrl" class="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-1.5">
-                      <span>👁️ Pratinjau Asli</span>
-                    </button>
-                    <button type="button" @click="saveTemplateSetup()" :disabled="!templateBgUrl" class="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-1.5">
-                      <span>💾 Simpan Tata Letak</span>
-                    </button>
-                  </div>
+                  </template>
+                  <button type="button" @click="openAddTemplateModal()" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-indigo-600/30 border border-dashed border-gray-600 hover:border-indigo-500 text-gray-300 hover:text-white text-xs font-bold transition flex items-center space-x-1.5">
+                    <span>+ Tambah Template Baru</span>
+                  </button>
                 </div>
               </div>
 
-              <!-- Interactive Drag & Drop Visual Canvas -->
-              <div class="lg:col-span-2 bg-gray-950 border border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[460px]">
-                <div class="w-full flex items-center justify-between mb-3 text-xs text-gray-400">
-                  <div class="flex items-center space-x-2">
-                    <span class="text-gray-300 font-medium">Tampilan Kanvas:</span>
-                    <button type="button" @click="previewTextMode = !previewTextMode" class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center space-x-1.5" :class="previewTextMode ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300' : 'bg-gray-800 border-gray-700 text-gray-400'">
-                      <span x-text="previewTextMode ? '👁️ Pratinjau Teks Contoh' : '{ } Nama Variabel'"></span>
-                    </button>
+              <!-- Active Template Meta Bar -->
+              <div x-show="activeTemplate" class="p-4 rounded-2xl bg-gray-950 border border-gray-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+                <div class="flex items-center space-x-3 w-full md:w-auto">
+                  <div class="flex-1 md:flex-none">
+                    <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1">Nama Template</label>
+                    <input type="text" x-model="activeTemplate.name" placeholder="Nama Template" class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-700 text-white font-semibold text-xs focus:border-indigo-500">
                   </div>
-                  <span class="font-mono text-[11px] text-indigo-400">Resolusi Asli: 1920 x 1080 px</span>
+                  <div>
+                    <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1">Peran Target Peserta</label>
+                    <select x-model="activeTemplate.role_target" class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-700 text-white font-semibold text-xs focus:border-indigo-500">
+                      <option value="ALL">Semua Peran (ALL)</option>
+                      <option value="Presenter">Presenter</option>
+                      <option value="Participant">Participant / Peserta</option>
+                      <option value="Author">Author / Penulis</option>
+                      <option value="Speaker">Speaker / Narasumber</option>
+                      <option value="Committee">Committee / Panitia</option>
+                      <option value="Trainer">Trainer / Instruktur</option>
+                    </select>
+                  </div>
                 </div>
 
-                <!-- Canvas Wrapper -->
-                <div id="certCanvas"
-                     @mousemove="onCanvasMouseMove($event)"
-                     @mouseup="onCanvasMouseUp()"
-                     @mouseleave="onCanvasMouseUp()"
-                     class="relative w-full max-w-[680px] aspect-[16/9] bg-slate-900 border-2 border-dashed border-indigo-500/30 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center select-none"
-                     :style="templateBgUrl ? 'background-image: url(' + templateBgUrl + '); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;' : ''">
+                <div class="flex items-center space-x-2">
+                  <button type="button" x-show="!activeTemplate.is_default" @click="setAsDefaultTemplate()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-emerald-600/30 text-gray-300 hover:text-emerald-300 font-semibold border border-gray-700 hover:border-emerald-500 transition flex items-center space-x-1">
+                    <span>⭐ Jadikan Default</span>
+                  </button>
+                  <button type="button" x-show="eventTemplates.length > 1" @click="deleteCurrentTemplate()" class="px-3 py-1.5 rounded-xl bg-rose-950/40 hover:bg-rose-600 text-rose-300 hover:text-white font-semibold border border-rose-800/60 transition flex items-center space-x-1">
+                    <span>🗑️ Hapus Template</span>
+                  </button>
+                </div>
+              </div>
 
-                  <div x-show="!templateBgUrl" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-25 space-y-1">
-                    <span class="text-4xl font-serif text-gray-400 font-bold tracking-widest">SERTIFIKAT</span>
-                    <span class="text-xs text-gray-500 font-sans">Unggah gambar template untuk mengaktifkan kanvas</span>
+              <!-- Main Designer Grid -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Sidebar Controls -->
+                <div class="space-y-4">
+                  <div class="p-4 rounded-xl bg-gray-800/80 border border-gray-700">
+                    <label class="block text-xs font-bold text-indigo-400 uppercase tracking-wider mb-2">Background Gambar Sertifikat</label>
+                    <input type="file" @change="uploadBackground($event)" accept="image/*" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer">
+                    <p class="text-[11px] text-gray-400 mt-2" x-text="templateBgUrl ? '✓ Gambar template terpasang (1920x1080)' : 'Unggah file gambar sertifikat kosong (.png / .jpg)'"></p>
                   </div>
 
-                  <!-- Draggable Dynamic Text Elements with live preview sample text, font family, and color -->
-                  <template x-for="(field, idx) in templateFields" :key="field.field_key">
-                    <div @mousedown.prevent="startDrag('field', idx, $event)"
-                         class="canvas-box absolute px-2.5 py-1 rounded-lg font-bold shadow-lg transition-shadow cursor-grab whitespace-nowrap select-none"
-                         :class="(draggedTarget === 'field' && draggedIndex === idx) ? 'bg-indigo-600 !text-white ring-2 ring-white scale-105 z-30' : (previewTextMode ? 'bg-slate-900/85 border border-indigo-400/70 hover:bg-slate-900 z-10' : 'bg-indigo-950/90 border border-indigo-400/80 hover:bg-indigo-900 z-10')"
-                         :style="'left: ' + ((field.pos_x / 1920) * 100) + '%; top: ' + ((field.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(9, Math.round((parseInt(field.font_size, 10) || 36) * 0.28)) + 'px; color: ' + (field.font_color || '#FFFFFF') + '; font-family: ' + getCssFontFamily(field.font_family) + ';'"
-                         x-text="previewTextMode ? getFieldSampleText(field.field_key) : ('\u007B\u007B' + field.field_key + '\u007D\u007D')">
+                  <!-- Parameter Penempatan (Clean List) -->
+                  <div class="p-4 rounded-xl bg-gray-800/80 border border-gray-700 space-y-3" :class="!templateBgUrl ? 'opacity-50 pointer-events-none' : ''">
+                    <div class="flex justify-between items-center">
+                      <div>
+                        <h3 class="text-xs font-bold text-white uppercase tracking-wider">Parameter Penempatan</h3>
+                        <p class="text-[10px] text-gray-400">Daftar elemen aktif pada kanvas</p>
+                      </div>
+                      <button type="button" @click="openAddParamModal()" :disabled="!templateBgUrl" class="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold text-xs flex items-center space-x-1 transition shadow-md">
+                        <span>+ Tambah / Bubuhkan</span>
+                      </button>
                     </div>
-                  </template>
+                    
+                    <!-- Clean List of Active Parameters with exact field names -->
+                    <div class="space-y-2 max-h-72 overflow-y-auto pr-1">
 
-                  <!-- Draggable QR Code / Barcode Element -->
-                  <div @mousedown.prevent="startDrag('qr', null, $event)"
-                       class="canvas-box absolute rounded-xl font-bold flex flex-col items-center justify-center shadow-2xl transition-shadow select-none cursor-grab"
-                       :class="draggedTarget === 'qr' ? 'bg-indigo-600 ring-4 ring-white z-40' : 'bg-slate-900/90 border-2 border-indigo-400 text-white hover:bg-slate-800 z-20'"
-                       :style="'left: ' + ((qrConfig.pos_x / 1920) * 100) + '%; top: ' + ((qrConfig.pos_y / 1080) * 100) + '%; width: ' + Math.max(38, Math.round((parseInt(qrConfig.size, 10) || 150) * 0.35)) + 'px; height: ' + Math.max(38, Math.round((parseInt(qrConfig.size, 10) || 150) * 0.35)) + 'px; transform: translate(-50%, -50%);'">
-                    <svg class="w-1/2 h-1/2 text-indigo-300" fill="currentColor" viewBox="0 0 24 24"><path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h2v2h-2v-2zm-4-2h2v4h-2v-4zm4 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-6 4h4v2h-4v-2zm6 0h2v2h-2v-2z"/></svg>
-                    <span class="text-[7px] font-mono mt-0.5 text-indigo-200">QR/Barcode</span>
+                      <!-- Fixed Draggable QR Code Item -->
+                      <div class="p-3 rounded-xl bg-gray-900 border border-indigo-500/40 flex items-center justify-between hover:border-indigo-400 transition">
+                        <div class="space-y-0.5">
+                          <div class="flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                            <span class="font-mono font-bold text-sm text-indigo-300">QR Code / Barcode</span>
+                          </div>
+                          <p class="text-[11px] text-gray-400" x-text="'Ukuran: ' + qrConfig.size + 'px • Geser pada kanvas'"></p>
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                          <button type="button" @click="adjustQrSize(-15)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan QR">-</button>
+                          <span class="text-xs font-mono font-semibold text-indigo-300 w-11 text-center" x-text="qrConfig.size + 'px'"></span>
+                          <button type="button" @click="adjustQrSize(15)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan QR">+</button>
+                        </div>
+                      </div>
+
+                      <!-- Fixed Draggable Cert Serial Number Item with HEX Code Support -->
+                      <div class="p-3.5 rounded-2xl bg-gray-900 border border-gray-700/80 space-y-2 hover:border-amber-500/50 transition">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full" :style="'background-color: ' + (certNumConfig.color || '#F59E0B')"></span>
+                            <span class="font-mono font-bold text-xs text-amber-300">Nomor Seri / Kode Unik</span>
+                          </div>
+                          <div class="flex items-center space-x-1.5">
+                            <input type="text" x-model="certNumConfig.color" maxlength="7" placeholder="#F59E0B" class="w-16 px-1.5 py-0.5 bg-gray-950 border border-gray-700 text-white font-mono text-[10px] rounded uppercase text-center focus:border-amber-500" title="Ketik Kode HEX (cth: #F59E0B)">
+                            <input type="color" x-model="certNumConfig.color" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="Pilih Warna Nomor Seri">
+                            <button type="button" @click="adjustCertNumFontSize(-4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Kecilkan Font">-</button>
+                            <span class="text-xs font-mono font-semibold text-amber-300 w-8 text-center" x-text="certNumConfig.font_size + 'px'"></span>
+                            <button type="button" @click="adjustCertNumFontSize(4)" class="w-6 h-6 rounded bg-gray-800 hover:bg-gray-700 text-xs font-bold text-gray-300 flex items-center justify-center transition" title="Besarkan Font">+</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Dynamic Parameters List with Font Family, HEX Code & Color Customizers -->
+                      <template x-for="(field, idx) in templateFields" :key="field.field_key">
+                        <div class="p-3.5 rounded-2xl bg-gray-900 border border-gray-700/80 space-y-2.5 hover:border-indigo-500/50 transition">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                              <span class="w-2.5 h-2.5 rounded-full" :style="'background-color: ' + (field.font_color || '#818CF8')"></span>
+                              <span class="font-mono font-bold text-xs text-indigo-300" x-text="'\u007B\u007B' + field.field_key + '\u007D\u007D'"></span>
+                            </div>
+                            <button type="button" @click="removeField(idx)" class="p-1 rounded-lg hover:bg-red-900/40 text-gray-500 hover:text-red-400 transition" title="Hapus Parameter">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                          </div>
+
+                          <!-- Controls Row: Font Family, Size Stepper, HEX Input, Color Picker -->
+                          <div class="grid grid-cols-12 gap-1.5 items-center text-xs">
+                            <!-- Font Family Selector -->
+                            <div class="col-span-5">
+                              <select x-model="field.font_family" class="w-full px-2 py-1.5 rounded-lg bg-gray-950 border border-gray-700 text-white text-[11px] font-medium focus:border-indigo-500">
+                                <option value="Cinzel-Bold.ttf">👑 Cinzel (Royal Serif)</option>
+                                <option value="LiberationSerif-Bold.ttf">🏛️ Times / Formal Serif</option>
+                                <option value="GreatVibes-Regular.ttf">🖋️ Great Vibes (Kaligrafi)</option>
+                                <option value="AlexBrush-Regular.ttf">✍️ Alex Brush (Signature)</option>
+                                <option value="Montserrat-Bold.ttf">📐 Montserrat (Modern Sans)</option>
+                                <option value="Roboto-Bold.ttf">🔤 Roboto (Clean Sans)</option>
+                                <option value="LiberationMono-Bold.ttf">💻 Monospace (Kode)</option>
+                              </select>
+                            </div>
+
+                            <!-- Font Size Stepper -->
+                            <div class="col-span-3 flex items-center justify-between bg-gray-950 px-1 py-1 rounded-lg border border-gray-800">
+                              <button type="button" @click="adjustFieldFontSize(field, -4)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[10px] font-bold text-gray-300 flex items-center justify-center transition">-</button>
+                              <span class="text-[11px] font-mono font-bold text-indigo-300" x-text="field.font_size + 'px'"></span>
+                              <button type="button" @click="adjustFieldFontSize(field, 4)" class="w-5 h-5 rounded bg-gray-800 hover:bg-gray-700 text-[10px] font-bold text-gray-300 flex items-center justify-center transition">+</button>
+                            </div>
+
+                            <!-- HEX Code Input -->
+                            <div class="col-span-3 flex justify-center">
+                              <input type="text" x-model="field.font_color" maxlength="7" placeholder="#1E293B" class="w-full px-1.5 py-1 bg-gray-950 border border-gray-700 text-white font-mono text-[10px] rounded uppercase focus:border-indigo-500 text-center" title="Ketik Kode HEX (cth: #1E293B)">
+                            </div>
+
+                            <!-- Color Picker Input -->
+                            <div class="col-span-1 flex justify-center">
+                              <input type="color" x-model="field.font_color" class="w-6 h-6 rounded cursor-pointer bg-transparent border-0" title="Ubah Warna Font">
+                            </div>
+                          </div>
+
+                          <!-- Quick Color Palette Preset Chips -->
+                          <div class="flex items-center space-x-1.5 pt-0.5">
+                            <button type="button" @click="field.font_color = '#0F172A'" class="w-4 h-4 rounded-full bg-slate-900 border border-gray-600 hover:scale-125 transition" title="Hitam / Gelap (#0F172A)"></button>
+                            <button type="button" @click="field.font_color = '#B45309'" class="w-4 h-4 rounded-full bg-amber-600 border border-amber-400 hover:scale-125 transition" title="Gold / Emas (#B45309)"></button>
+                            <button type="button" @click="field.font_color = '#1E3A8A'" class="w-4 h-4 rounded-full bg-blue-900 border border-blue-500 hover:scale-125 transition" title="Navy / Biru (#1E3A8A)"></button>
+                            <button type="button" @click="field.font_color = '#991B1B'" class="w-4 h-4 rounded-full bg-red-800 border border-red-500 hover:scale-125 transition" title="Maroon (#991B1B)"></button>
+                            <button type="button" @click="field.font_color = '#065F46'" class="w-4 h-4 rounded-full bg-emerald-800 border border-emerald-500 hover:scale-125 transition" title="Emerald / Hijau (#065F46)"></button>
+                            <button type="button" @click="field.font_color = '#FFFFFF'" class="w-4 h-4 rounded-full bg-white border border-gray-400 hover:scale-125 transition" title="Putih (#FFFFFF)"></button>
+                            <button type="button" @click="field.font_color = '#6366F1'" class="w-4 h-4 rounded-full bg-indigo-500 border border-indigo-400 hover:scale-125 transition" title="Indigo (#6366F1)"></button>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                      <button type="button" @click="openLivePreview()" :disabled="!templateBgUrl" class="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-1.5">
+                        <span>👁️ Pratinjau Asli</span>
+                      </button>
+                      <button type="button" @click="saveTemplateSetup()" :disabled="!templateBgUrl" class="py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-bold text-xs transition shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-1.5">
+                        <span>💾 Simpan Tata Letak</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Interactive Drag & Drop Visual Canvas -->
+                <div class="lg:col-span-2 bg-gray-950 border border-gray-800 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[460px]">
+                  <div class="w-full flex items-center justify-between mb-3 text-xs text-gray-400">
+                    <div class="flex items-center space-x-2">
+                      <span class="text-gray-300 font-medium">Tampilan Kanvas:</span>
+                      <button type="button" @click="previewTextMode = !previewTextMode" class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center space-x-1.5" :class="previewTextMode ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300' : 'bg-gray-800 border-gray-700 text-gray-400'">
+                        <span x-text="previewTextMode ? '👁️ Pratinjau Teks Contoh' : '{ } Nama Variabel'"></span>
+                      </button>
+                    </div>
+                    <span class="font-mono text-[11px] text-indigo-400" x-text="(activeTemplate?.name || 'Template') + ' • 1920 x 1080 px'"></span>
                   </div>
 
-                  <!-- Draggable Certificate Serial Number / Unique Code Element -->
-                  <div @mousedown.prevent="startDrag('certNum', null, $event)"
-                       class="canvas-box absolute px-3 py-1 rounded-lg font-mono font-bold shadow-lg transition-shadow select-none cursor-grab whitespace-nowrap"
-                       :class="draggedTarget === 'certNum' ? 'bg-indigo-600 !text-white ring-2 ring-white z-40' : 'bg-gray-900/90 border border-amber-400 hover:bg-gray-800 z-20'"
-                       :style="'left: ' + ((certNumConfig.pos_x / 1920) * 100) + '%; top: ' + ((certNumConfig.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(9, Math.round((parseInt(certNumConfig.font_size, 10) || 24) * 0.32)) + 'px; color: ' + (certNumConfig.color || '#F59E0B') + ';'">
-                    No: CERT-XXXXXXXX
-                  </div>
+                  <!-- Canvas Wrapper -->
+                  <div id="certCanvas"
+                       @mousemove="onCanvasMouseMove($event)"
+                       @mouseup="onCanvasMouseUp()"
+                       @mouseleave="onCanvasMouseUp()"
+                       class="relative w-full max-w-[680px] aspect-[16/9] bg-slate-900 border-2 border-dashed border-indigo-500/30 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center select-none"
+                       :style="templateBgUrl ? 'background-image: url(' + templateBgUrl + '); background-size: 100% 100%; background-repeat: no-repeat; background-position: center;' : ''">
 
+                    <div x-show="!templateBgUrl" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-25 space-y-1">
+                      <span class="text-4xl font-serif text-gray-400 font-bold tracking-widest">SERTIFIKAT</span>
+                      <span class="text-xs text-gray-500 font-sans">Unggah gambar template untuk mengaktifkan kanvas</span>
+                    </div>
+
+                    <!-- Draggable Dynamic Text Elements with live preview sample text, font family, and color -->
+                    <template x-for="(field, idx) in templateFields" :key="field.field_key">
+                      <div @mousedown.prevent="startDrag('field', idx, $event)"
+                           class="canvas-box absolute px-2.5 py-1 rounded-lg font-bold shadow-lg transition-shadow cursor-grab whitespace-nowrap select-none"
+                           :class="(draggedTarget === 'field' && draggedIndex === idx) ? 'bg-indigo-600 !text-white ring-2 ring-white scale-105 z-30' : (previewTextMode ? 'bg-slate-900/85 border border-indigo-400/70 hover:bg-slate-900 z-10' : 'bg-indigo-950/90 border border-indigo-400/80 hover:bg-indigo-900 z-10')"
+                           :style="'left: ' + ((field.pos_x / 1920) * 100) + '%; top: ' + ((field.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(9, Math.round((parseInt(field.font_size, 10) || 36) * 0.28)) + 'px; color: ' + (field.font_color || '#FFFFFF') + '; font-family: ' + getCssFontFamily(field.font_family) + ';'"
+                           x-text="previewTextMode ? getFieldSampleText(field.field_key) : ('\u007B\u007B' + field.field_key + '\u007D\u007D')">
+                      </div>
+                    </template>
+
+                    <!-- Draggable QR Code / Barcode Element -->
+                    <div @mousedown.prevent="startDrag('qr', null, $event)"
+                         class="canvas-box absolute rounded-xl font-bold flex flex-col items-center justify-center shadow-2xl transition-shadow select-none cursor-grab"
+                         :class="draggedTarget === 'qr' ? 'bg-indigo-600 ring-4 ring-white z-40' : 'bg-slate-900/90 border-2 border-indigo-400 text-white hover:bg-slate-800 z-20'"
+                         :style="'left: ' + ((qrConfig.pos_x / 1920) * 100) + '%; top: ' + ((qrConfig.pos_y / 1080) * 100) + '%; width: ' + Math.max(38, Math.round((parseInt(qrConfig.size, 10) || 150) * 0.35)) + 'px; height: ' + Math.max(38, Math.round((parseInt(qrConfig.size, 10) || 150) * 0.35)) + 'px; transform: translate(-50%, -50%);'">
+                      <svg class="w-1/2 h-1/2 text-indigo-300" fill="currentColor" viewBox="0 0 24 24"><path d="M2 2h8v8H2V2zm2 2v4h4V4H4zm10-2h8v8h-8V2zm2 2v4h4V4h-4zM2 14h8v8H2v-8zm2 2v4h4v-4H4zm14 0h2v2h-2v-2zm-4-2h2v4h-2v-4zm4 4h2v2h-2v-2zm2-2h2v2h-2v-2zm-6 4h4v2h-4v-2zm6 0h2v2h-2v-2z"/></svg>
+                      <span class="text-[7px] font-mono mt-0.5 text-indigo-200">QR/Barcode</span>
+                    </div>
+
+                    <!-- Draggable Certificate Serial Number / Unique Code Element -->
+                    <div @mousedown.prevent="startDrag('certNum', null, $event)"
+                         class="canvas-box absolute px-3 py-1 rounded-lg font-mono font-bold shadow-lg transition-shadow select-none cursor-grab whitespace-nowrap"
+                         :class="draggedTarget === 'certNum' ? 'bg-indigo-600 !text-white ring-2 ring-white z-40' : 'bg-gray-900/90 border border-amber-400 hover:bg-gray-800 z-20'"
+                         :style="'left: ' + ((certNumConfig.pos_x / 1920) * 100) + '%; top: ' + ((certNumConfig.pos_y / 1080) * 100) + '%; transform: translate(-50%, -50%); font-size: ' + Math.max(9, Math.round((parseInt(certNumConfig.font_size, 10) || 24) * 0.32)) + 'px; color: ' + (certNumConfig.color || '#F59E0B') + ';'">
+                      No: CERT-XXXXXXXX
+                    </div>
+
+                  </div>
                 </div>
               </div>
             </div>
@@ -774,6 +834,54 @@
     </div>
   </div>
 
+  <!-- MODAL: Add New Template (Multi-Template Support) -->
+  <div x-show="showAddTemplateModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <h3 class="text-base font-bold text-white">Tambah Template Sertifikat Baru</h3>
+        <button type="button" @click="showAddTemplateModal = false" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+
+      <form @submit.prevent="submitCreateAdditionalTemplate()" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Nama Template <span class="text-rose-400">*</span></label>
+          <input type="text" x-model="newTemplateForm.name" required placeholder="Contoh: Template Presenter / Template Authors / Template Peserta" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+        </div>
+
+        <div>
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Peran Target Peserta <span class="text-rose-400">*</span></label>
+          <select x-model="newTemplateForm.role_target" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+            <option value="ALL">Semua Peran (ALL)</option>
+            <option value="Presenter">Presenter / Pemakalah</option>
+            <option value="Participant">Participant / Peserta</option>
+            <option value="Author">Author / Penulis</option>
+            <option value="Speaker">Speaker / Narasumber</option>
+            <option value="Committee">Committee / Panitia</option>
+            <option value="Trainer">Trainer / Instruktur</option>
+          </select>
+          <p class="text-[10px] text-gray-400 mt-1">Sertifikat akan otomatis memilih template ini bila peran peserta cocok.</p>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-gray-300 uppercase mb-1">Background Gambar Sertifikat <span class="text-rose-400">*</span></label>
+          <input type="file" id="newTemplateFileInput" accept="image/*" required class="w-full text-xs text-gray-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-gray-950 rounded-xl p-1.5 border border-gray-700">
+        </div>
+
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="tplDefaultCheck" x-model="newTemplateForm.is_default" class="w-4 h-4 rounded text-indigo-600 bg-gray-950 border-gray-700 focus:ring-indigo-500">
+          <label for="tplDefaultCheck" class="text-xs text-gray-300 font-medium cursor-pointer">Jadikan template default acara</label>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-800">
+          <button type="button" @click="showAddTemplateModal = false" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs font-semibold">Batal</button>
+          <button type="submit" :disabled="newTemplateLoading" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-bold shadow-lg shadow-indigo-600/30">
+            <span x-text="newTemplateLoading ? 'Mengunggah...' : 'Buat Template'"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL: Add Paper Modal -->
   <div x-show="showAddPaperModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6 space-y-4">
@@ -949,12 +1057,20 @@
         newPaper: { paper_code: '', title: '', authors: '', presenter_name: '' },
         newParam: { key: '', size: 36 },
 
+        // Multi-Template Support State
+        eventTemplates: [],
+        activeTemplateId: '',
+        activeTemplate: null,
+        showAddTemplateModal: false,
+        newTemplateLoading: false,
+        newTemplateForm: { name: '', role_target: 'ALL', is_default: false },
+
         // Interactive Drag-and-Drop Canvas State
         draggedTarget: null, // 'field', 'qr', 'certNum'
         draggedIndex: null,
         templateFields: [], // Dynamic parameter fields
         qrConfig: { pos_x: 1700, pos_y: 860, size: 150 },
-        certNumConfig: { pos_x: 250, pos_y: 980, font_size: 24 },
+        certNumConfig: { pos_x: 250, pos_y: 980, font_size: 24, color: '#F59E0B' },
 
         getTabTitle() {
           const map = {
@@ -1019,7 +1135,7 @@
               this.events = await res.json();
               if (this.events.length > 0 && !this.selectedEventId) {
                 this.selectedEventId = this.events[0].id;
-                this.loadEventTemplate();
+                this.loadEventTemplates();
                 this.loadPapers();
                 this.loadAttendances();
               }
@@ -1103,7 +1219,7 @@
         selectEvent(ev, tab) {
           this.selectedEventId = ev.id;
           this.activeTab = tab;
-          if (tab === 'designer') this.loadEventTemplate();
+          if (tab === 'designer') this.loadEventTemplates();
           if (tab === 'papers') this.loadPapers();
           if (tab === 'attendance') this.loadAttendances();
         },
@@ -1214,7 +1330,7 @@
             'namapeserta': 'Prof. Dr. Ahmad Farhan, M.Kom.',
             'judulpaper': 'AI-Driven Blockchain Security in Multi-Cloud Infrastructure',
             'judul': 'AI-Driven Blockchain Security in Multi-Cloud Infrastructure',
-            'peran': 'Presenter',
+            'peran': (this.activeTemplate?.role_target && this.activeTemplate.role_target !== 'ALL') ? this.activeTemplate.role_target : 'Presenter',
             'institusi': 'Fakultas Sains dan Teknologi, UIN Jakarta',
             'afiliasi': 'Fakultas Sains dan Teknologi, UIN Jakarta',
             'kodeklaim': 'DYBC9PF4',
@@ -1231,47 +1347,108 @@
           this.templateFields.splice(idx, 1);
         },
 
-        async loadEventTemplate() {
+        // Multi-Template Operations
+        async loadEventTemplates() {
           if (!this.selectedEventId) return;
+          this.eventTemplates = [];
           this.templateBgUrl = '';
           this.templateFields = [];
+          this.activeTemplate = null;
+
           try {
             const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/api/v1/events/${this.selectedEventId}`, {
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/templates`, {
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             if (res.ok) {
-              const data = await res.json();
-              if (data.template) {
-                if (data.template.background_image_url) {
-                  this.templateBgUrl = this.getMediaUrl(data.template.background_image_url);
+              this.eventTemplates = await res.json();
+              if (this.eventTemplates.length > 0) {
+                let target = this.eventTemplates.find(t => t.id === this.activeTemplateId);
+                if (!target) {
+                  target = this.eventTemplates.find(t => t.is_default) || this.eventTemplates[0];
                 }
-                if (data.template.qr_x !== null && data.template.qr_y !== null) {
-                  this.qrConfig.pos_x = data.template.qr_x;
-                  this.qrConfig.pos_y = data.template.qr_y;
-                  this.qrConfig.size = data.template.qr_size || 150;
-                }
-                if (data.template.cert_number_x !== null && data.template.cert_number_y !== null) {
-                  this.certNumConfig.pos_x = data.template.cert_number_x;
-                  this.certNumConfig.pos_y = data.template.cert_number_y;
-                  this.certNumConfig.font_size = data.template.cert_number_font_size || 24;
-                  this.certNumConfig.color = data.template.cert_number_color || '#F59E0B';
-                }
-                if (data.template.fields && data.template.fields.length > 0) {
-                  this.templateFields = data.template.fields.map(f => ({
-                    field_key: f.field_key,
-                    label: f.label,
-                    pos_x: f.pos_x,
-                    pos_y: f.pos_y,
-                    font_size: f.font_size,
-                    font_family: f.font_family || 'Cinzel-Bold.ttf',
-                    font_color: f.font_color || '#0F172A'
-                  }));
-                }
+                this.switchTemplate(target);
               }
             }
           } catch (e) {
             console.error(e);
+          }
+        },
+
+        switchTemplate(tpl) {
+          if (!tpl) return;
+          this.activeTemplateId = tpl.id;
+          this.activeTemplate = tpl;
+          this.templateBgUrl = tpl.background_image_url ? this.getMediaUrl(tpl.background_image_url) : '';
+          
+          if (tpl.qr_x !== null && tpl.qr_y !== null) {
+            this.qrConfig.pos_x = tpl.qr_x;
+            this.qrConfig.pos_y = tpl.qr_y;
+            this.qrConfig.size = tpl.qr_size || 150;
+          }
+          if (tpl.cert_number_x !== null && tpl.cert_number_y !== null) {
+            this.certNumConfig.pos_x = tpl.cert_number_x;
+            this.certNumConfig.pos_y = tpl.cert_number_y;
+            this.certNumConfig.font_size = tpl.cert_number_font_size || 24;
+            this.certNumConfig.color = tpl.cert_number_color || '#F59E0B';
+          }
+          if (tpl.fields && tpl.fields.length > 0) {
+            this.templateFields = tpl.fields.map(f => ({
+              field_key: f.field_key,
+              label: f.label,
+              pos_x: f.pos_x,
+              pos_y: f.pos_y,
+              font_size: f.font_size,
+              font_family: f.font_family || 'Cinzel-Bold.ttf',
+              font_color: f.font_color || '#0F172A'
+            }));
+          } else {
+            this.templateFields = [];
+          }
+        },
+
+        openAddTemplateModal() {
+          this.newTemplateForm = {
+            name: 'Template ' + (this.eventTemplates.length + 1),
+            role_target: 'ALL',
+            is_default: false
+          };
+          const fileInput = document.getElementById('newTemplateFileInput');
+          if (fileInput) fileInput.value = '';
+          this.showAddTemplateModal = true;
+        },
+
+        async submitCreateAdditionalTemplate() {
+          const fileInput = document.getElementById('newTemplateFileInput');
+          if (!fileInput || !fileInput.files[0]) {
+            alert('Pilih gambar background template terlebih dahulu.');
+            return;
+          }
+          this.newTemplateLoading = true;
+          try {
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('name', this.newTemplateForm.name || 'Template Baru');
+            formData.append('role_target', this.newTemplateForm.role_target || 'ALL');
+            formData.append('is_default', this.newTemplateForm.is_default ? 'true' : 'false');
+
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/templates/upload-background`, {
+              method: 'POST',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+              body: formData
+            });
+
+            if (!res.ok) throw new Error('Gagal membuat template baru.');
+            const createdTpl = await res.json();
+            this.showAddTemplateModal = false;
+            this.activeTemplateId = createdTpl.id;
+            await this.loadEventTemplates();
+            alert('Template "' + createdTpl.name + '" berhasil ditambahkan!');
+          } catch (e) {
+            alert(e.message);
+          } finally {
+            this.newTemplateLoading = false;
           }
         },
 
@@ -1280,20 +1457,72 @@
           if (!file) return;
           const formData = new FormData();
           formData.append('file', file);
+          if (this.activeTemplateId) {
+            formData.append('template_id', this.activeTemplateId);
+          }
+          if (this.activeTemplate) {
+            formData.append('name', this.activeTemplate.name);
+            formData.append('role_target', this.activeTemplate.role_target);
+          }
+
           const token = localStorage.getItem('auth_token');
-          const res = await fetch(`/api/v1/events/${this.selectedEventId}/template/upload-background`, {
+          const res = await fetch(`/api/v1/events/${this.selectedEventId}/templates/upload-background`, {
             method: 'POST',
             headers: token ? { 'Authorization': `Bearer ${token}` } : {},
             body: formData
           });
           if (res.ok) {
-            alert('Template sertifikat berhasil diunggah!');
-            this.templateBgUrl = URL.createObjectURL(file);
+            alert('Gambar background template berhasil diperbarui!');
+            await this.loadEventTemplates();
+          }
+        },
+
+        async setAsDefaultTemplate() {
+          if (!this.activeTemplateId) return;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/templates/${this.activeTemplateId}/set-default`, {
+              method: 'POST',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              await this.loadEventTemplates();
+              alert('Template ini berhasil dijadikan default!');
+            }
+          } catch (e) {
+            alert('Gagal mengatur template default: ' + e.message);
+          }
+        },
+
+        async deleteCurrentTemplate() {
+          if (!this.activeTemplateId) return;
+          if (this.eventTemplates.length <= 1) {
+            alert('Tidak dapat menghapus satu-satunya template.');
+            return;
+          }
+          if (!confirm('Apakah Anda yakin ingin menghapus template "' + (this.activeTemplate?.name || 'ini') + '"?')) return;
+
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/templates/${this.activeTemplateId}`, {
+              method: 'DELETE',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok || res.status === 204) {
+              this.activeTemplateId = '';
+              await this.loadEventTemplates();
+              alert('Template berhasil dihapus.');
+            }
+          } catch (e) {
+            alert('Gagal menghapus template: ' + e.message);
           }
         },
 
         async saveTemplateSetup() {
+          if (!this.activeTemplateId) return;
           const payload = {
+            name: this.activeTemplate?.name || 'Template Utama',
+            role_target: this.activeTemplate?.role_target || 'ALL',
             width: 1920,
             height: 1080,
             qr_x: parseInt(this.qrConfig.pos_x),
@@ -1302,7 +1531,7 @@
             cert_number_x: parseInt(this.certNumConfig.pos_x),
             cert_number_y: parseInt(this.certNumConfig.pos_y),
             cert_number_font_size: parseInt(this.certNumConfig.font_size),
-            cert_number_color: this.certNumConfig.color || '#475569',
+            cert_number_color: this.certNumConfig.color || '#F59E0B',
             fields: this.templateFields.map(f => ({
               field_key: f.field_key,
               label: f.label || f.field_key,
@@ -1316,7 +1545,7 @@
             }))
           };
           const token = localStorage.getItem('auth_token');
-          const res = await fetch(`/api/v1/events/${this.selectedEventId}/template/setup`, {
+          const res = await fetch(`/api/v1/events/${this.selectedEventId}/templates/${this.activeTemplateId}/setup`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1324,11 +1553,14 @@
             },
             body: JSON.stringify(payload)
           });
-          if (res.ok) alert('Tata letak posisi koordinat (parameter teks, font, warna, QR Code/Barcode, dan Nomor Seri) berhasil disimpan!');
+          if (res.ok) {
+            alert('Tata letak posisi koordinat dan warna template berhasil disimpan!');
+            await this.loadEventTemplates();
+          }
         },
 
         async openLivePreview() {
-          if (!this.selectedEventId || !this.templateBgUrl) {
+          if (!this.selectedEventId || !this.templateBgUrl || !this.activeTemplateId) {
             alert('Unggah template sertifikat terlebih dahulu untuk melihat pratinjau.');
             return;
           }
@@ -1345,7 +1577,7 @@
             cert_number_x: parseInt(this.certNumConfig.pos_x),
             cert_number_y: parseInt(this.certNumConfig.pos_y),
             cert_number_font_size: parseInt(this.certNumConfig.font_size),
-            cert_number_color: this.certNumConfig.color || '#475569',
+            cert_number_color: this.certNumConfig.color || '#F59E0B',
             fields: this.templateFields.map(f => ({
               field_key: f.field_key,
               label: f.label || f.field_key,
@@ -1361,7 +1593,7 @@
 
           try {
             const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/api/v1/events/${this.selectedEventId}/template/preview`, {
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/templates/${this.activeTemplateId}/preview`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
