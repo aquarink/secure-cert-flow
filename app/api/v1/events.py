@@ -41,6 +41,7 @@ def list_events(
             "location": ev.location,
             "event_date": ev.event_date,
             "description": ev.description,
+            "cert_prefix": ev.cert_prefix,
             "status": ev.status,
             "is_cert_open": bool(ev.is_cert_open),
             "created_at": ev.created_at,
@@ -67,6 +68,7 @@ def create_event(
         location=event_in.location,
         event_date=event_in.event_date,
         description=event_in.description,
+        cert_prefix=event_in.cert_prefix.strip().upper() if event_in.cert_prefix else None,
         status="draft",
         is_cert_open=bool(event_in.is_cert_open)
     )
@@ -82,6 +84,7 @@ def create_event(
         "location": event.location,
         "event_date": event.event_date,
         "description": event.description,
+        "cert_prefix": event.cert_prefix,
         "status": event.status,
         "is_cert_open": event.is_cert_open,
         "created_at": event.created_at,
@@ -116,6 +119,7 @@ def get_event(
         "location": event.location,
         "event_date": event.event_date,
         "description": event.description,
+        "cert_prefix": event.cert_prefix,
         "status": event.status,
         "is_cert_open": bool(event.is_cert_open),
         "created_at": event.created_at,
@@ -139,6 +143,8 @@ def update_event(
         raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
 
     update_data = event_update.model_dump(exclude_unset=True)
+    if "cert_prefix" in update_data and update_data["cert_prefix"]:
+        update_data["cert_prefix"] = update_data["cert_prefix"].strip().upper()
     for field, val in update_data.items():
         setattr(event, field, val)
 
@@ -156,6 +162,7 @@ def update_event(
         "location": event.location,
         "event_date": event.event_date,
         "description": event.description,
+        "cert_prefix": event.cert_prefix,
         "status": event.status,
         "is_cert_open": bool(event.is_cert_open),
         "created_at": event.created_at,
