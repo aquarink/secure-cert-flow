@@ -13,7 +13,10 @@ class Template(Base):
     __tablename__ = "templates"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    event_id = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    event_id = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
+    name = Column(String(100), default="Template Utama", nullable=False)
+    role_target = Column(String(100), default="ALL", nullable=False)  # ALL, Presenter, Participant, Author, Speaker, Committee
+    is_default = Column(Boolean, default=True, nullable=False)
     background_image_url = Column(String(1024), nullable=False)
     width = Column(Integer, default=1920, nullable=False)
     height = Column(Integer, default=1080, nullable=False)
@@ -42,7 +45,7 @@ class Template(Base):
     updated_at = Column(DateTime(timezone=True), server_default=text("NOW()"), onupdate=text("NOW()"), nullable=False)
 
     # Relationships
-    event = relationship("Event", back_populates="template")
+    event = relationship("Event", back_populates="templates")
     fields = relationship("TemplateField", back_populates="template", cascade="all, delete-orphan", order_by="TemplateField.pos_y")
 
 
