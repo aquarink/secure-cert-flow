@@ -27,9 +27,19 @@ class Event(Base):
 
     # Relationships
     user = relationship("User", back_populates="events")
-    template = relationship("Template", back_populates="event", uselist=False, cascade="all, delete-orphan")
+    templates = relationship("Template", back_populates="event", cascade="all, delete-orphan", order_by="Template.created_at")
     batches = relationship("Batch", back_populates="event", cascade="all, delete-orphan")
     participants = relationship("Participant", back_populates="event", cascade="all, delete-orphan")
     certificates = relationship("Certificate", back_populates="event", cascade="all, delete-orphan")
     papers = relationship("Paper", back_populates="event", cascade="all, delete-orphan")
     attendances = relationship("Attendance", back_populates="event", cascade="all, delete-orphan")
+
+    @property
+    def template(self):
+        """Returns the default template or first template for backwards compatibility"""
+        if self.templates:
+            for t in self.templates:
+                if t.is_default:
+                    return t
+            return self.templates[0]
+        return None
