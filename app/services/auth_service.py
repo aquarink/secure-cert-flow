@@ -53,11 +53,8 @@ def decode_access_token(token: str) -> Optional[dict]:
 
 
 def generate_claim_code(length: int = 8) -> str:
-    """Generates an 8-character uppercase alphanumeric unique claim code"""
-    alphabet = string.ascii_uppercase + string.digits
-    # Exclude easily confused characters: O, 0, I, 1
-    safe_alphabet = "".join([c for c in alphabet if c not in "O0I1"])
-    return "".join(secrets.choice(safe_alphabet) for _ in range(length))
+    """Generates an 8-digit unique numeric claim code (e.g. 84920173) to eliminate letter/number ambiguity (like O vs 0, I vs 1)"""
+    return "".join(secrets.choice(string.digits) for _ in range(length))
 
 
 def generate_verification_token() -> str:
