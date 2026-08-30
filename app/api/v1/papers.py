@@ -362,20 +362,30 @@ def delete_paper(
 @router.get("/events/{event_id}/authors-certificates")
 def list_authors_certificates(
     event_id: uuid.UUID,
+    q: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Retrieves all issued author certificates for an event.
+    Retrieves all issued author certificates for an event with optional search query.
     """
     event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
 
-    participants = db.query(Participant).filter(
+    query = db.query(Participant).filter(
         Participant.event_id == event_id,
         Participant.role == "Author"
-    ).all()
+    )
+
+    if q and q.strip():
+        search_pattern = f"%{q.strip()}%"
+        query = query.filter(
+            (Participant.name.ilike(search_pattern)) |
+            (Participant.paper_title.ilike(search_pattern))
+        )
+
+    participants = query.all()
 
     results = []
     for p in participants:
@@ -393,6 +403,7 @@ def list_authors_certificates(
                 "created_at": p.certificate.created_at.strftime("%d %b %Y, %H:%M") if p.certificate.created_at else "-"
             })
 
+    results.reverse()
     return results
 
 
