@@ -16,6 +16,7 @@ class Certificate(Base):
     event_id = Column(UUID(as_uuid=True), ForeignKey("events.id", ondelete="CASCADE"), nullable=False, index=True)
     participant_id = Column(UUID(as_uuid=True), ForeignKey("participants.id", ondelete="CASCADE"), nullable=False, index=True)
     batch_id = Column(UUID(as_uuid=True), ForeignKey("batches.id", ondelete="SET NULL"), nullable=True)
+    template_id = Column(UUID(as_uuid=True), ForeignKey("templates.id", ondelete="SET NULL"), nullable=True, index=True)
     
     certificate_number = Column(String(100), unique=True, nullable=False, index=True)
     claim_code = Column(String(16), unique=True, nullable=False, index=True)
@@ -34,3 +35,4 @@ class Certificate(Base):
     event = relationship("Event", back_populates="certificates")
     participant = relationship("Participant", back_populates="certificate")
     batch = relationship("Batch", back_populates="certificates")
+    template = relationship("Template")
