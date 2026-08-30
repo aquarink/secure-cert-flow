@@ -148,6 +148,20 @@ def update_event(
     for field, val in update_data.items():
         setattr(event, field, val)
 
+    # If cert_prefix updated, automatically sync and re-format existing certificates for this event
+    if "cert_prefix" in update_data:
+        new_prefix = event.cert_prefix
+        event_certs = db.query(Certificate).filter(Certificate.event_id == event.id).all()
+        for c in event_certs:
+            if new_prefix and new_prefix.strip():
+                c.certificate_number = f"{new_prefix.strip().upper()}-{c.claim_code}"
+            else:
+                default_prefix = event.name[:4].upper().replace(" ", "C")
+                c.certificate_number = f"{default_prefix}-{event.event_date.year if event.event_date else datetime.now().year}-{c.claim_code}"
+            # Invalidate image cache so it re-renders with the updated certificate number
+            c.image_url = None
+            c.checksum_sha256 = None
+
     db.commit()
     db.refresh(event)
 
