@@ -145,9 +145,12 @@ def verify_certificate(claim_code: str, db: Session = Depends(get_db)):
     """
     Public verification endpoint (target of certificate QR Codes).
     Validates certificate authenticity, displaying recipient details and SHA-256 hash.
+    Accepts both short 8-digit claim_code and full certificate_number (e.g. CITSM2026-84920173).
     """
     code_cleaned = claim_code.strip().upper()
-    cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
+    cert = db.query(Certificate).filter(
+        (Certificate.claim_code == code_cleaned) | (Certificate.certificate_number == code_cleaned)
+    ).first()
     
     if not cert:
         return CertificateVerificationResponse(
@@ -192,15 +195,17 @@ def verify_certificate(claim_code: str, db: Session = Depends(get_db)):
 @router.post("/claim", response_model=ClaimResponse)
 def claim_certificate(request: ClaimRequest, db: Session = Depends(get_db)):
     """
-    Public claiming endpoint: Participant enters 8-character unique claim code.
+    Public claiming endpoint: Participant enters 8-digit unique claim code or full certificate number.
     """
     code_cleaned = request.claim_code.strip().upper()
-    cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
+    cert = db.query(Certificate).filter(
+        (Certificate.claim_code == code_cleaned) | (Certificate.certificate_number == code_cleaned)
+    ).first()
 
     if not cert:
         raise HTTPException(
             status_code=404,
-            detail="Kode klaim tidak ditemukan. Pastikan 8 karakter alfanumerik sudah benar."
+            detail="Kode klaim atau nomor sertifikat tidak ditemukan. Pastikan karakter yang dimasukkan sudah benar."
         )
 
     ev = cert.event
@@ -249,7 +254,9 @@ def claim_certificate(request: ClaimRequest, db: Session = Depends(get_db)):
 def get_certificate_image(claim_code: str, db: Session = Depends(get_db)):
     """Streams certificate image directly with on-demand rendering"""
     code_cleaned = claim_code.strip().upper()
-    cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
+    cert = db.query(Certificate).filter(
+        (Certificate.claim_code == code_cleaned) | (Certificate.certificate_number == code_cleaned)
+    ).first()
     if not cert:
         raise HTTPException(status_code=404, detail="Sertifikat tidak ditemukan.")
 
@@ -261,7 +268,9 @@ def get_certificate_image(claim_code: str, db: Session = Depends(get_db)):
 def download_certificate(claim_code: str, db: Session = Depends(get_db)):
     """Downloads certificate image attachment and increments download counter"""
     code_cleaned = claim_code.strip().upper()
-    cert = db.query(Certificate).filter(Certificate.claim_code == code_cleaned).first()
+    cert = db.query(Certificate).filter(
+        (Certificate.claim_code == code_cleaned) | (Certificate.certificate_number == code_cleaned)
+    ).first()
     if not cert:
         raise HTTPException(status_code=404, detail="Sertifikat tidak ditemukan.")
 
