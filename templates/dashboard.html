@@ -29,22 +29,22 @@
       </div>
 
       <nav class="p-4 space-y-1">
-        <button @click="activeTab = 'events'" :class="activeTab === 'events' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+        <button @click="switchTab('events')" :class="activeTab === 'events' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           <span>1. Kelola Acara</span>
         </button>
 
-        <button @click="activeTab = 'designer'" :class="activeTab === 'designer' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+        <button @click="switchTab('designer')" :class="activeTab === 'designer' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
           <span>2. Template & Visual</span>
         </button>
 
-        <button @click="activeTab = 'papers'" :class="activeTab === 'papers' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <span>3. Judul Paper / Karya</span>
+        <button @click="switchTab('papers')" :class="activeTab === 'papers' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span>3. Judul Paper & Authors</span>
         </button>
 
-        <button @click="activeTab = 'attendance'" :class="activeTab === 'attendance' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+        <button @click="switchTab('attendance')" :class="activeTab === 'attendance' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           <span>4. Presensi Kehadiran</span>
         </button>
@@ -406,105 +406,197 @@
       </div>
 
       <!-- =================================================================== -->
-      <!-- TAB 3: KATALOG JUDUL PAPER / KARYA (SUBMISSIONS)                    -->
+      <!-- TAB 3: KATALOG JUDUL PAPER & SERTIFIKAT AUTHORS                    -->
       <!-- =================================================================== -->
       <div x-show="activeTab === 'papers'" x-cloak class="space-y-6">
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-800 pb-4">
             <div>
               <h2 class="text-xl font-bold text-white">Katalog Judul Paper & Sertifikat Authors</h2>
-              <p class="text-sm text-gray-400">Kelola daftar paper. Presenter dapat memilih paper saat presensi, dan panitia dapat menerbitkan sertifikat authorship untuk seluruh penulis.</p>
+              <p class="text-sm text-gray-400">Kelola judul paper, tandai status pembayaran (Paid), dan terbitkan sertifikat authorship untuk para penulis yang telah lunas.</p>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
-              <select x-model="selectedEventId" @change="loadPapers()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold">
+            <div class="flex flex-wrap items-center gap-2.5">
+              <select x-model="selectedEventId" @change="loadPapers(); loadAuthorCerts();" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
                 <option value="">-- Pilih Acara --</option>
                 <template x-for="ev in events" :key="ev.id">
                   <option :value="ev.id" x-text="ev.name"></option>
                 </template>
               </select>
-              <button @click="generateAllAuthorsCerts()" :disabled="!selectedEventId || papers.length === 0" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold text-xs transition shadow-md flex items-center space-x-1.5">
-                <span>🎓 Terbitkan Sertifikat Semua Authors</span>
+              <button @click="generateAllAuthorsCerts()" :disabled="!selectedEventId || papers.length === 0" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-semibold text-xs transition shadow-md flex items-center space-x-1.5" title="Hanya menerbitkan sertifikat untuk paper yang berstatus Paid">
+                <span>🎓 Terbitkan Sertifikat (Paid Only)</span>
               </button>
               <button @click="showBulkPaperModal = true" :disabled="!selectedEventId" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-200 font-semibold text-xs border border-gray-700 transition flex items-center space-x-1.5">
                 <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                 <span>📥 Bulk Import Excel</span>
               </button>
-              <button @click="showAddPaperModal = true" :disabled="!selectedEventId" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold text-xs transition">
+              <button @click="openAddPaperModal()" :disabled="!selectedEventId" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold text-xs transition shadow-lg shadow-emerald-600/30">
                 + Tambah Paper
               </button>
             </div>
           </div>
 
+          <!-- Controls Bar: Realtime Search, Paid Filter, Page Size -->
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+              <!-- Search Box -->
+              <div class="relative w-full sm:w-64">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">🔍</span>
+                <input type="text" x-model="paperSearch" @input="paperPage = 1" placeholder="Cari paper, kode, penulis..." class="w-full pl-9 pr-3.5 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+              </div>
+
+              <!-- Paid Status Filter -->
+              <select x-model="paperPaidFilter" @change="paperPage = 1" class="px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs font-semibold focus:border-indigo-500">
+                <option value="all">Semua Status (All)</option>
+                <option value="paid">✓ Hanya Lunas (Paid)</option>
+                <option value="unpaid">✗ Belum Bayar (Unpaid)</option>
+              </select>
+            </div>
+
+            <!-- Page Size & Summary Counter -->
+            <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+              <span class="text-gray-400 font-mono text-[11px]" x-text="'Total: ' + filteredPapers().length + ' paper (' + papers.filter(p => p.is_paid).length + ' Paid)'"></span>
+              <div class="flex items-center space-x-1.5">
+                <span class="text-gray-500">Tampilkan:</span>
+                <select x-model.number="paperPageSize" @change="paperPage = 1" class="px-2.5 py-1.5 rounded-lg bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                  <option :value="10">10</option>
+                  <option :value="25">25</option>
+                  <option :value="50">50</option>
+                  <option :value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <!-- Papers Table -->
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto rounded-xl border border-gray-800">
             <table class="w-full text-left text-xs text-gray-300">
-              <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-wider">
+              <thead class="bg-gray-800/90 text-gray-400 uppercase text-[10px] tracking-wider">
                 <tr>
-                  <th class="px-4 py-3">Kode Paper</th>
+                  <th class="px-4 py-3 w-28 text-center">Status Paid</th>
+                  <th class="px-4 py-3 w-32">Kode Paper</th>
                   <th class="px-4 py-3">Judul Paper (Title)</th>
                   <th class="px-4 py-3">Penulis (Authors)</th>
                   <th class="px-4 py-3">Presenter</th>
-                  <th class="px-4 py-3 text-right">Aksi</th>
+                  <th class="px-4 py-3 text-right w-24">Aksi</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-800">
-                <template x-for="paper in papers" :key="paper.id">
+              <tbody class="divide-y divide-gray-800 bg-gray-950/40">
+                <template x-for="paper in paginatedPapers()" :key="paper.id">
                   <tr class="hover:bg-gray-800/50 transition">
+                    <!-- Interactive Paid Toggle Column -->
+                    <td class="px-4 py-3 text-center">
+                      <button type="button" @click="togglePaperPaid(paper)"
+                              class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition transform active:scale-95"
+                              :class="paper.is_paid ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30' : 'bg-rose-500/10 text-gray-400 border-gray-700 hover:bg-rose-500/20 hover:text-rose-300'"
+                              :title="paper.is_paid ? 'Klik untuk ubah jadi Belum Bayar' : 'Klik untuk tandai Lunas (Paid)'">
+                        <span class="w-1.5 h-1.5 rounded-full" :class="paper.is_paid ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'"></span>
+                        <span x-text="paper.is_paid ? 'PAID' : 'UNPAID'"></span>
+                      </button>
+                    </td>
                     <td class="px-4 py-3 font-mono font-bold text-indigo-400" x-text="paper.paper_code || '-'"></td>
-                    <td class="px-4 py-3 font-semibold text-white" x-text="paper.title"></td>
+                    <td class="px-4 py-3 font-semibold text-white max-w-sm">
+                      <span x-text="paper.title"></span>
+                    </td>
                     <td class="px-4 py-3 text-gray-400" x-text="paper.authors || '-'"></td>
                     <td class="px-4 py-3 text-gray-300" x-text="paper.presenter_name || '-'"></td>
-                    <td class="px-4 py-3 text-right space-x-2">
-                      <button @click="generateSinglePaperAuthorCerts(paper.id)" class="text-indigo-400 hover:text-indigo-300 font-semibold p-1" title="Terbitkan Sertifikat Authors">Sertifikat Authors</button>
-                      <button @click="deletePaper(paper.id)" class="text-gray-500 hover:text-red-400 p-1">Hapus</button>
+                    <td class="px-4 py-3 text-right">
+                      <button type="button" @click="openPaperActionModal(paper)" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-300 hover:text-white font-bold text-xs transition flex items-center justify-center space-x-1 ml-auto shadow-sm">
+                        <span>⚡ Aksi</span>
+                      </button>
                     </td>
                   </tr>
                 </template>
-                <tr x-show="papers.length === 0">
-                  <td colspan="5" class="px-4 py-8 text-center text-gray-500">Belum ada data paper. Gunakan "Bulk Import Excel" atau "+ Tambah Paper".</td>
+                <tr x-show="filteredPapers().length === 0">
+                  <td colspan="6" class="px-4 py-8 text-center text-gray-500">
+                    <span x-text="papers.length === 0 ? 'Belum ada data paper. Gunakan \"Bulk Import Excel\" atau \"+ Tambah Paper\".' : 'Tidak ada paper yang cocok dengan pencarian atau filter status.'"></span>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination Bar for Papers Table -->
+          <div x-show="filteredPapers().length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-gray-400">
+            <div>
+              Menampilkan <span class="font-bold text-white" x-text="((paperPage - 1) * paperPageSize) + 1"></span> s/d <span class="font-bold text-white" x-text="Math.min(paperPage * paperPageSize, filteredPapers().length)"></span> dari <span class="font-bold text-white" x-text="filteredPapers().length"></span> paper
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" @click="paperPage = Math.max(1, paperPage - 1)" :disabled="paperPage === 1" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">
+                ← Prev
+              </button>
+              
+              <template x-for="p in getPaginationRange(paperPage, totalPaperPages())" :key="p">
+                <button type="button" @click="if (p !== '...') paperPage = p"
+                        class="w-8 h-8 rounded-xl text-xs font-bold transition flex items-center justify-center border"
+                        :class="paperPage === p ? 'bg-indigo-600 border-indigo-500 text-white shadow-md' : (p === '...' ? 'bg-transparent border-transparent text-gray-500 cursor-default' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700')">
+                  <span x-text="p"></span>
+                </button>
+              </template>
+
+              <button type="button" @click="paperPage = Math.min(totalPaperPages(), paperPage + 1)" :disabled="paperPage === totalPaperPages()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">
+                Next →
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Authors Certificates Management Card -->
-        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
-          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-5">
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-gray-800 pb-4">
             <div class="flex items-center space-x-3">
               <div class="w-10 h-10 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-lg font-bold border border-indigo-500/30">📜</div>
               <div>
                 <div class="flex items-center space-x-2">
                   <h3 class="text-base font-bold text-white">Daftar Sertifikat Authors Terbit</h3>
-                  <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-xs font-bold border border-indigo-500/30" x-text="authorCerts.length + ' Penulis'"></span>
+                  <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono text-xs font-bold border border-indigo-500/30" x-text="authorCerts.length + ' Sertifikat'"></span>
                 </div>
-                <p class="text-xs text-gray-400 mt-0.5">Seluruh penulis yang telah dibuatkan tautan klaim / verifikasi sertifikat authorship.</p>
+                <p class="text-xs text-gray-400 mt-0.5">Daftar sertifikat authorship yang telah diterbitkan. Klik tombol Aksi untuk menyalin link, membuka halaman, atau menghapus sertifikat.</p>
               </div>
             </div>
 
             <div class="flex items-center space-x-2 w-full md:w-auto">
-              <input type="text" x-model="authorSearch" placeholder="Cari nama penulis / judul paper..." class="px-3.5 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs w-full md:w-64 focus:border-indigo-500">
-              <button type="button" @click="exportAuthorsCSV()" :disabled="authorCerts.length === 0" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 text-xs font-semibold border border-gray-700 transition shrink-0 flex items-center space-x-1.5">
+              <button type="button" @click="exportAuthorsCSV()" :disabled="authorCerts.length === 0" class="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 text-xs font-semibold border border-gray-700 transition shrink-0 flex items-center space-x-1.5">
                 <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Export CSV</span>
               </button>
             </div>
           </div>
 
+          <!-- Controls Bar for Author Certificates -->
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+            <div class="relative w-full sm:w-72">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">🔍</span>
+              <input type="text" x-model="authorSearch" @input="authorPage = 1" placeholder="Cari nama penulis, judul paper, klaim..." class="w-full pl-9 pr-3.5 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+            </div>
+
+            <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+              <span class="text-gray-400 font-mono text-[11px]" x-text="'Total: ' + filteredAuthorCerts().length + ' sertifikat'"></span>
+              <div class="flex items-center space-x-1.5">
+                <span class="text-gray-500">Tampilkan:</span>
+                <select x-model.number="authorPageSize" @change="authorPage = 1" class="px-2.5 py-1.5 rounded-lg bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                  <option :value="10">10</option>
+                  <option :value="25">25</option>
+                  <option :value="50">50</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <!-- Authors Certificates Table -->
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto rounded-xl border border-gray-800">
             <table class="w-full text-left text-xs text-gray-300">
-              <thead class="bg-gray-800/80 text-gray-400 uppercase text-[10px] tracking-wider">
+              <thead class="bg-gray-800/90 text-gray-400 uppercase text-[10px] tracking-wider">
                 <tr>
                   <th class="px-4 py-3">Nama Penulis (Author)</th>
                   <th class="px-4 py-3">Judul Paper</th>
-                  <th class="px-4 py-3">Kode Paper</th>
-                  <th class="px-4 py-3">Nomor Seri & Kode Klaim</th>
-                  <th class="px-4 py-3 text-right">Tautan Sertifikat</th>
+                  <th class="px-4 py-3 w-28">Kode Paper</th>
+                  <th class="px-4 py-3 w-48">Nomor Seri & Kode Klaim</th>
+                  <th class="px-4 py-3 text-right w-24">Aksi</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-800">
-                <template x-for="ac in filteredAuthorCerts()" :key="ac.participant_id">
+              <tbody class="divide-y divide-gray-800 bg-gray-950/40">
+                <template x-for="ac in paginatedAuthorCerts()" :key="ac.participant_id">
                   <tr class="hover:bg-gray-800/50 transition">
                     <td class="px-4 py-3 font-semibold text-white">
                       <div class="flex items-center space-x-2">
@@ -518,23 +610,45 @@
                       <span class="text-amber-400 font-bold" x-text="ac.claim_code"></span>
                       <span class="text-gray-500 text-[10px] block" x-text="ac.certificate_number"></span>
                     </td>
-                    <td class="px-4 py-3 text-right space-x-1.5">
-                      <button type="button" @click="copyToClipboard(window.location.origin + ac.cert_url)" class="px-2.5 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold border border-gray-700 transition" title="Salin Link">
-                        📋 Salin Link
+                    <td class="px-4 py-3 text-right">
+                      <button type="button" @click="openAuthorCertActionModal(ac)" class="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 border border-indigo-500/40 text-indigo-300 hover:text-white font-bold text-xs transition flex items-center justify-center space-x-1 ml-auto shadow-sm">
+                        <span>⚡ Aksi</span>
                       </button>
-                      <a :href="ac.cert_url" target="_blank" class="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white font-mono text-xs transition border border-indigo-500/40">
-                        Buka Sertifikat ↗
-                      </a>
                     </td>
                   </tr>
                 </template>
                 <tr x-show="filteredAuthorCerts().length === 0">
                   <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                    <span x-text="authorCerts.length === 0 ? 'Belum ada sertifikat authorship yang diterbitkan. Klik \"🎓 Terbitkan Sertifikat Semua Authors\" di atas.' : 'Tidak ditemukan penulis yang sesuai kata kunci pencarian.'"></span>
+                    <span x-text="authorCerts.length === 0 ? 'Belum ada sertifikat authorship yang diterbitkan. Klik \"🎓 Terbitkan Sertifikat (Paid Only)\" di atas.' : 'Tidak ditemukan penulis yang sesuai kata kunci pencarian.'"></span>
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Pagination Bar for Author Certificates -->
+          <div x-show="filteredAuthorCerts().length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-gray-400">
+            <div>
+              Menampilkan <span class="font-bold text-white" x-text="((authorPage - 1) * authorPageSize) + 1"></span> s/d <span class="font-bold text-white" x-text="Math.min(authorPage * authorPageSize, filteredAuthorCerts().length)"></span> dari <span class="font-bold text-white" x-text="filteredAuthorCerts().length"></span> sertifikat
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" @click="authorPage = Math.max(1, authorPage - 1)" :disabled="authorPage === 1" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">
+                ← Prev
+              </button>
+              
+              <template x-for="p in getPaginationRange(authorPage, totalAuthorPages())" :key="p">
+                <button type="button" @click="if (p !== '...') authorPage = p"
+                        class="w-8 h-8 rounded-xl text-xs font-bold transition flex items-center justify-center border"
+                        :class="authorPage === p ? 'bg-indigo-600 border-indigo-500 text-white shadow-md' : (p === '...' ? 'bg-transparent border-transparent text-gray-500 cursor-default' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700')">
+                  <span x-text="p"></span>
+                </button>
+              </template>
+
+              <button type="button" @click="authorPage = Math.min(totalAuthorPages(), authorPage + 1)" :disabled="authorPage === totalAuthorPages()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">
+                Next →
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -885,30 +999,165 @@
   <!-- MODAL: Add Paper Modal -->
   <div x-show="showAddPaperModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-md p-6 space-y-4">
-      <h3 class="text-base font-bold text-white">Tambah Judul Paper / Karya</h3>
-      <form @submit.prevent="submitAddPaper()" class="space-y-3 text-xs">
+      <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+        <h3 class="text-base font-bold text-white">Tambah Judul Paper / Karya</h3>
+        <button type="button" @click="showAddPaperModal = false" class="text-gray-400 hover:text-white">✕</button>
+      </div>
+      <form @submit.prevent="submitAddPaper()" class="space-y-3.5 text-xs">
         <div>
           <label class="block font-semibold text-gray-300 mb-1">Kode Paper / Karya (Opsional)</label>
-          <input type="text" x-model="newPaper.paper_code" placeholder="ICST-001 / KARYA-A" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
+          <input type="text" x-model="newPaper.paper_code" placeholder="ICST-001 / KARYA-A" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
         </div>
         <div>
           <label class="block font-semibold text-gray-300 mb-1">Judul Paper / Karya <span class="text-rose-400">*</span></label>
-          <textarea x-model="newPaper.title" required rows="2" placeholder="Judul artikel ilmiah atau karya..." class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs"></textarea>
+          <textarea x-model="newPaper.title" required rows="2" placeholder="Judul artikel ilmiah atau karya..." class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500"></textarea>
         </div>
         <div>
-          <label class="block font-semibold text-gray-300 mb-1">Nama Para Penulis (Pisahkan dengan koma)</label>
-          <input type="text" x-model="newPaper.authors" placeholder="Dr. Ahmad Farhan, Siti Nurhaliza, M.Cs." class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
+          <label class="block font-semibold text-gray-300 mb-1">Nama Para Penulis (Pisahkan dengan koma / strip)</label>
+          <input type="text" x-model="newPaper.authors" placeholder="Prof. Dr. Ahmad Farhan, Siti Nurhaliza, M.Cs." class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
         </div>
         <div>
           <label class="block font-semibold text-gray-300 mb-1">Presenter Utama</label>
-          <input type="text" x-model="newPaper.presenter_name" placeholder="Dr. Ahmad Farhan" class="w-full px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs">
+          <input type="text" x-model="newPaper.presenter_name" placeholder="Prof. Dr. Ahmad Farhan" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
         </div>
-        <div class="flex justify-end space-x-2 pt-2">
-          <button type="button" @click="showAddPaperModal = false" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs">Batal</button>
-          <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">Simpan Paper</button>
+        <div class="flex items-center space-x-2 pt-1">
+          <input type="checkbox" id="addPaperPaidCheck" x-model="newPaper.is_paid" class="w-4 h-4 rounded text-emerald-600 bg-gray-950 border-gray-700 focus:ring-emerald-500">
+          <label for="addPaperPaidCheck" class="text-xs text-emerald-300 font-semibold cursor-pointer">✓ Status Pembayaran LUNAS (Paid)</label>
+        </div>
+        <div class="flex justify-end space-x-2 pt-2 border-t border-gray-800">
+          <button type="button" @click="showAddPaperModal = false" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs font-semibold">Batal</button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg shadow-emerald-600/30">Simpan Paper</button>
         </div>
       </form>
     </div>
+  </div>
+
+  <!-- MODAL: Paper Action Modal (Aksi Paper & Penerbitan Sertifikat) -->
+  <div x-show="showPaperActionModal" x-cloak class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <template x-if="selectedPaperAction">
+      <div class="bg-gray-900 border border-indigo-500/40 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-sm font-bold border border-indigo-500/30">📄</div>
+            <div>
+              <h3 class="text-base font-bold text-white">Menu Aksi Paper</h3>
+              <span class="font-mono text-[11px] text-indigo-400" x-text="selectedPaperAction.paper_code || 'Tanpa Kode Paper'"></span>
+            </div>
+          </div>
+          <button type="button" @click="showPaperActionModal = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">✕</button>
+        </div>
+
+        <!-- Detail Box -->
+        <div class="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-2.5 text-xs">
+          <div>
+            <span class="text-gray-400 block text-[10px] uppercase font-bold">Judul Paper:</span>
+            <p class="font-semibold text-white leading-snug" x-text="selectedPaperAction.title"></p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <span class="text-gray-400 block text-[10px] uppercase font-bold">Penulis (Authors):</span>
+              <p class="text-gray-300 font-medium truncate" x-text="selectedPaperAction.authors || '-'"></p>
+            </div>
+            <div>
+              <span class="text-gray-400 block text-[10px] uppercase font-bold">Presenter:</span>
+              <p class="text-gray-300 font-medium truncate" x-text="selectedPaperAction.presenter_name || '-'"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Status Control Switch -->
+        <div class="p-4 rounded-2xl border flex items-center justify-between transition"
+             :class="selectedPaperAction.is_paid ? 'bg-emerald-950/30 border-emerald-500/40' : 'bg-rose-950/20 border-rose-800/40'">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 rounded-full" :class="selectedPaperAction.is_paid ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'"></span>
+              <span class="font-bold text-xs" :class="selectedPaperAction.is_paid ? 'text-emerald-300' : 'text-rose-300'" x-text="selectedPaperAction.is_paid ? 'STATUS: LUNAS (PAID)' : 'STATUS: BELUM BAYAR (UNPAID)'"></span>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-0.5">Hanya paper Paid yang dapat diterbitkan sertifikatnya.</p>
+          </div>
+          <button type="button" @click="togglePaperPaid(selectedPaperAction)" class="px-3.5 py-1.5 rounded-xl text-xs font-bold border transition transform active:scale-95 shadow-sm"
+                  :class="selectedPaperAction.is_paid ? 'bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500' : 'bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-700 hover:text-white'">
+            <span x-text="selectedPaperAction.is_paid ? '✓ Sudah Lunas' : 'Tandai Lunas'"></span>
+          </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2 pt-2 border-t border-gray-800">
+          <button type="button" @click="generateSinglePaperAuthorCerts(selectedPaperAction.id); showPaperActionModal = false;"
+                  :disabled="!selectedPaperAction.is_paid"
+                  class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+            <span>🎓 Terbitkan Sertifikat Authors (1 Sertifikat Gabungan)</span>
+          </button>
+
+          <p x-show="!selectedPaperAction.is_paid" class="text-[10px] text-amber-400 text-center font-medium">
+            ⚠️ Klik tombol "Tandai Lunas" di atas terlebih dahulu untuk mengaktifkan penerbitan sertifikat.
+          </p>
+
+          <button type="button" @click="deletePaper(selectedPaperAction.id); showPaperActionModal = false;"
+                  class="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-rose-950 text-gray-400 hover:text-rose-300 font-semibold text-xs border border-gray-700 hover:border-rose-700/50 transition flex items-center justify-center space-x-1.5">
+            <span>🗑️ Hapus Paper Dari Katalog</span>
+          </button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- MODAL: Author Certificate Action Modal (Aksi & Hapus Sertifikat Terbit) -->
+  <div x-show="showAuthorCertActionModal" x-cloak class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <template x-if="selectedAuthorCertAction">
+      <div class="bg-gray-900 border border-indigo-500/40 rounded-3xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-sm font-bold border border-indigo-500/30">📜</div>
+            <div>
+              <h3 class="text-base font-bold text-white">Aksi Sertifikat Authorship</h3>
+              <span class="font-mono text-[11px] text-amber-400 font-bold" x-text="'Kode Klaim: ' + selectedAuthorCertAction.claim_code"></span>
+            </div>
+          </div>
+          <button type="button" @click="showAuthorCertActionModal = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">✕</button>
+        </div>
+
+        <!-- Detail Box -->
+        <div class="p-4 rounded-2xl bg-gray-950 border border-gray-800 space-y-2.5 text-xs">
+          <div>
+            <span class="text-gray-400 block text-[10px] uppercase font-bold">Nama Penulis Pada Sertifikat:</span>
+            <p class="font-bold text-emerald-400 text-sm leading-snug" x-text="selectedAuthorCertAction.author_name"></p>
+          </div>
+          <div>
+            <span class="text-gray-400 block text-[10px] uppercase font-bold">Judul Paper:</span>
+            <p class="text-gray-300 font-medium" x-text="selectedAuthorCertAction.paper_title || '-'"></p>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1 border-t border-gray-900">
+            <div>
+              <span class="text-gray-400 block text-[10px] uppercase font-bold">Kode Paper:</span>
+              <span class="font-mono font-bold text-indigo-400" x-text="selectedAuthorCertAction.paper_code || '-'"></span>
+            </div>
+            <div>
+              <span class="text-gray-400 block text-[10px] uppercase font-bold">Nomor Sertifikat:</span>
+              <span class="font-mono text-gray-400 text-[11px]" x-text="selectedAuthorCertAction.certificate_number || '-'"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2 pt-2 border-t border-gray-800">
+          <button type="button" @click="copyToClipboard(window.location.origin + selectedAuthorCertAction.cert_url)"
+                  class="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 transition flex items-center justify-center space-x-1.5 shadow-sm">
+            <span>📋 Salin Link Sertifikat / Verifikasi</span>
+          </button>
+
+          <a :href="selectedAuthorCertAction.cert_url" target="_blank"
+             class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-1.5 text-center">
+            <span>↗️ Buka Halaman Sertifikat</span>
+          </a>
+
+          <button type="button" @click="deleteAuthorCert(selectedAuthorCertAction.participant_id); showAuthorCertActionModal = false;"
+                  class="w-full py-2.5 px-4 rounded-xl bg-rose-950/40 hover:bg-rose-600 text-rose-300 hover:text-white font-bold text-xs border border-rose-800/60 transition flex items-center justify-center space-x-1.5">
+            <span>🗑️ Hapus Sertifikat (Untuk Generate Ulang)</span>
+          </button>
+        </div>
+      </div>
+    </template>
   </div>
 
   <!-- MODAL: Bulk Import Excel Papers -->
@@ -1046,15 +1295,30 @@
         previewImageUrl: '',
         previewTextMode: true,
         bulkPaperLoading: false,
+        
+        // Papers & Submissions State
+        paperSearch: '',
+        paperPage: 1,
+        paperPageSize: 10,
+        paperPaidFilter: 'all',
+        selectedPaperAction: null,
+        showPaperActionModal: false,
+
+        // Authors Certificates State
         authorCerts: [],
         authorSearch: '',
+        authorPage: 1,
+        authorPageSize: 10,
+        selectedAuthorCertAction: null,
+        showAuthorCertActionModal: false,
+
         issuedAuthorsResult: [],
         eventToDelete: null,
         deleteConfirmText: '',
         selectedEventId: '',
         templateBgUrl: '',
         newEvent: { name: '', event_type: 'webinar', location: '', event_date: new Date().toISOString().split('T')[0], description: '' },
-        newPaper: { paper_code: '', title: '', authors: '', presenter_name: '' },
+        newPaper: { paper_code: '', title: '', authors: '', presenter_name: '', is_paid: false },
         newParam: { key: '', size: 36 },
 
         // Multi-Template Support State
@@ -1135,9 +1399,7 @@
               this.events = await res.json();
               if (this.events.length > 0 && !this.selectedEventId) {
                 this.selectedEventId = this.events[0].id;
-                this.loadEventTemplates();
-                this.loadPapers();
-                this.loadAttendances();
+                this.switchTab(this.activeTab);
               }
             }
           } catch (e) {
@@ -1216,12 +1478,19 @@
           }
         },
 
-        selectEvent(ev, tab) {
-          this.selectedEventId = ev.id;
+        switchTab(tab) {
           this.activeTab = tab;
           if (tab === 'designer') this.loadEventTemplates();
-          if (tab === 'papers') this.loadPapers();
+          if (tab === 'papers') {
+            this.loadPapers();
+            this.loadAuthorCerts();
+          }
           if (tab === 'attendance') this.loadAttendances();
+        },
+
+        selectEvent(ev, tab) {
+          this.selectedEventId = ev.id;
+          this.switchTab(tab || this.activeTab);
         },
 
         // Universal Canvas Drag & Drop (Supports Text Fields, QR Code, and Serial Number)
@@ -1613,6 +1882,21 @@
           }
         },
 
+        // Pagination Helper for Numerical Page Buttons
+        getPaginationRange(current, total) {
+          if (total <= 7) {
+            return Array.from({ length: total }, (_, i) => i + 1);
+          }
+          if (current <= 4) {
+            return [1, 2, 3, 4, 5, '...', total];
+          }
+          if (current >= total - 3) {
+            return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+          }
+          return [1, '...', current - 1, current, current + 1, '...', total];
+        },
+
+        // Papers Operations & Client/AJAX Pagination
         async loadPapers() {
           if (!this.selectedEventId) return;
           try {
@@ -1621,12 +1905,73 @@
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
             if (res.ok) this.papers = await res.json();
+            this.paperPage = 1;
             await this.loadAuthorCerts();
           } catch (e) {
             console.error(e);
           }
         },
 
+        filteredPapers() {
+          let list = this.papers;
+          if (this.paperPaidFilter === 'paid') {
+            list = list.filter(p => p.is_paid === true);
+          } else if (this.paperPaidFilter === 'unpaid') {
+            list = list.filter(p => !p.is_paid);
+          }
+          if (!this.paperSearch) return list;
+          const q = this.paperSearch.toLowerCase().trim();
+          return list.filter(p =>
+            (p.title && p.title.toLowerCase().includes(q)) ||
+            (p.paper_code && p.paper_code.toLowerCase().includes(q)) ||
+            (p.authors && p.authors.toLowerCase().includes(q)) ||
+            (p.presenter_name && p.presenter_name.toLowerCase().includes(q))
+          );
+        },
+
+        paginatedPapers() {
+          const list = this.filteredPapers();
+          const start = (this.paperPage - 1) * this.paperPageSize;
+          return list.slice(start, start + this.paperPageSize);
+        },
+
+        totalPaperPages() {
+          return Math.ceil(this.filteredPapers().length / this.paperPageSize) || 1;
+        },
+
+        openAddPaperModal() {
+          this.newPaper = { paper_code: '', title: '', authors: '', presenter_name: '', is_paid: false };
+          this.showAddPaperModal = true;
+        },
+
+        openPaperActionModal(paper) {
+          this.selectedPaperAction = paper;
+          this.showPaperActionModal = true;
+        },
+
+        async togglePaperPaid(paper) {
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/papers/${paper.id}/toggle-paid`, {
+              method: 'PATCH',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              const updated = await res.json();
+              paper.is_paid = updated.is_paid;
+              if (this.selectedPaperAction && this.selectedPaperAction.id === paper.id) {
+                this.selectedPaperAction.is_paid = updated.is_paid;
+              }
+            } else {
+              const err = await res.json();
+              alert('Gagal mengubah status Paid: ' + (err.detail || 'Terjadi kesalahan'));
+            }
+          } catch (e) {
+            alert('Gagal mengubah status Paid: ' + e.message);
+          }
+        },
+
+        // Authors Certificates Operations & Pagination
         async loadAuthorCerts() {
           if (!this.selectedEventId) return;
           try {
@@ -1636,6 +1981,7 @@
             });
             if (res.ok) {
               this.authorCerts = await res.json();
+              this.authorPage = 1;
             }
           } catch (e) {
             console.error('Failed to load author certs:', e);
@@ -1649,8 +1995,41 @@
             (ac.author_name && ac.author_name.toLowerCase().includes(q)) ||
             (ac.paper_title && ac.paper_title.toLowerCase().includes(q)) ||
             (ac.paper_code && ac.paper_code.toLowerCase().includes(q)) ||
-            (ac.claim_code && ac.claim_code.toLowerCase().includes(q))
+            (ac.claim_code && ac.claim_code.toLowerCase().includes(q)) ||
+            (ac.certificate_number && ac.certificate_number.toLowerCase().includes(q))
           );
+        },
+
+        paginatedAuthorCerts() {
+          const list = this.filteredAuthorCerts();
+          const start = (this.authorPage - 1) * this.authorPageSize;
+          return list.slice(start, start + this.authorPageSize);
+        },
+
+        totalAuthorPages() {
+          return Math.ceil(this.filteredAuthorCerts().length / this.authorPageSize) || 1;
+        },
+
+        openAuthorCertActionModal(ac) {
+          this.selectedAuthorCertAction = ac;
+          this.showAuthorCertActionModal = true;
+        },
+
+        async deleteAuthorCert(participantId) {
+          if (!confirm('Apakah Anda yakin ingin menghapus sertifikat author ini? Sertifikat dapat diterbitkan ulang kapan saja.')) return;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/authors-certificates/${participantId}`, {
+              method: 'DELETE',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok || res.status === 204) {
+              alert('Sertifikat author berhasil dihapus. Anda dapat menerbitkan ulang melalui menu Aksi Paper.');
+              await this.loadAuthorCerts();
+            }
+          } catch (e) {
+            alert('Gagal menghapus sertifikat: ' + e.message);
+          }
         },
 
         copyToClipboard(text) {
@@ -1692,7 +2071,7 @@
             });
             if (res.ok) {
               this.showAddPaperModal = false;
-              this.newPaper = { paper_code: '', title: '', authors: '', presenter_name: '' };
+              this.newPaper = { paper_code: '', title: '', authors: '', presenter_name: '', is_paid: false };
               await this.loadPapers();
             }
           } catch (e) {
@@ -1731,10 +2110,10 @@
         },
 
         async generateAllAuthorsCerts() {
-          if (!confirm('Terbitkan sertifikat authorship untuk seluruh penulis yang terdaftar di katalog paper?')) return;
+          if (!confirm('Terbitkan sertifikat authorship untuk seluruh paper berstatus LUNAS (Paid)?')) return;
           try {
             const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/api/v1/events/${this.selectedEventId}/papers/generate-all-author-certificates`, {
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/papers/generate-author-certificates`, {
               method: 'POST',
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
