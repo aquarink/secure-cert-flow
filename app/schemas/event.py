@@ -15,6 +15,7 @@ class EventBase(BaseModel):
     location: str = Field(..., min_length=2, max_length=255)
     event_date: date
     description: Optional[str] = None
+    cert_prefix: Optional[str] = Field(None, description="Custom prefix for certificate serial numbers (e.g. CITSM2026)")
     is_cert_open: Optional[bool] = False
 
 
@@ -28,6 +29,7 @@ class EventUpdate(BaseModel):
     location: Optional[str] = Field(None, min_length=2, max_length=255)
     event_date: Optional[date] = None
     description: Optional[str] = None
+    cert_prefix: Optional[str] = None
     status: Optional[str] = None
     is_cert_open: Optional[bool] = None
 
@@ -36,6 +38,7 @@ class EventResponse(EventBase):
     id: uuid.UUID
     user_id: uuid.UUID
     status: str
+    cert_prefix: Optional[str] = None
     is_cert_open: bool = False
     created_at: datetime
     updated_at: datetime
