@@ -20,45 +20,66 @@
 </head>
 <body class="bg-gray-950 text-gray-100 min-h-screen flex" x-data="dashboardApp()" x-init="init()">
 
-  <!-- Sidebar (4 Core Navigation Tabs) -->
-  <aside class="w-64 bg-gray-900 border-r border-gray-800 flex flex-col justify-between hidden md:flex shrink-0">
+  <!-- Collapsible Sidebar (4 Core Navigation Tabs) -->
+  <aside :class="sidebarCollapsed ? 'w-20' : 'w-64'" class="bg-gray-900 border-r border-gray-800 flex flex-col justify-between hidden md:flex shrink-0 transition-all duration-300 ease-in-out select-none">
     <div>
-      <div class="h-16 flex items-center px-6 border-b border-gray-800 space-x-3">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold">SC</div>
-        <span class="font-bold text-lg tracking-tight text-white">Cert<span class="text-indigo-400">Flow</span></span>
+      <!-- Sidebar Header & Toggle -->
+      <div class="h-16 flex items-center justify-between px-4 border-b border-gray-800">
+        <div class="flex items-center space-x-3 overflow-hidden">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold shrink-0 shadow-md">SC</div>
+          <span x-show="!sidebarCollapsed" class="font-bold text-lg tracking-tight text-white whitespace-nowrap">Cert<span class="text-indigo-400">Flow</span></span>
+        </div>
+        <button type="button" @click="toggleSidebar()" class="p-1.5 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-white transition shrink-0" :title="sidebarCollapsed ? 'Perluas Menu (Expand)' : 'Persempit Menu (Collapse)'">
+          <svg class="w-4 h-4 transition-transform duration-300" :class="sidebarCollapsed ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/>
+          </svg>
+        </button>
       </div>
 
-      <nav class="p-4 space-y-1 text-left">
-        <button @click="switchTab('events')" :class="activeTab === 'events' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center justify-start text-left space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+      <!-- Sidebar Navigation -->
+      <nav class="p-3 space-y-1.5 text-left">
+        <button type="button" @click="switchTab('events')"
+                :class="[activeTab === 'events' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white', sidebarCollapsed ? 'justify-center px-2' : 'justify-start text-left px-3.5']"
+                class="w-full flex items-center space-x-3 py-2.5 rounded-xl text-sm font-medium transition"
+                :title="sidebarCollapsed ? '1. Kelola Acara' : ''">
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          <span class="text-left font-semibold">1. Kelola Acara</span>
+          <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">1. Kelola Acara</span>
         </button>
 
-        <button @click="switchTab('designer')" :class="activeTab === 'designer' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center justify-start text-left space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+        <button type="button" @click="switchTab('designer')"
+                :class="[activeTab === 'designer' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white', sidebarCollapsed ? 'justify-center px-2' : 'justify-start text-left px-3.5']"
+                class="w-full flex items-center space-x-3 py-2.5 rounded-xl text-sm font-medium transition"
+                :title="sidebarCollapsed ? '2. Template & Visual' : ''">
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          <span class="text-left font-semibold">2. Template & Visual</span>
+          <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">2. Template & Visual</span>
         </button>
 
-        <button @click="switchTab('papers')" :class="activeTab === 'papers' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center justify-start text-left space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+        <button type="button" @click="switchTab('papers')"
+                :class="[activeTab === 'papers' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white', sidebarCollapsed ? 'justify-center px-2' : 'justify-start text-left px-3.5']"
+                class="w-full flex items-center space-x-3 py-2.5 rounded-xl text-sm font-medium transition"
+                :title="sidebarCollapsed ? '3. Judul Paper & Authors' : ''">
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          <span class="text-left font-semibold">3. Judul Paper & Authors</span>
+          <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">3. Judul Paper & Authors</span>
         </button>
 
-        <button @click="switchTab('attendance')" :class="activeTab === 'attendance' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white'" class="w-full flex items-center justify-start text-left space-x-3 px-4 py-2.5 rounded-xl text-sm font-medium transition">
+        <button type="button" @click="switchTab('attendance')"
+                :class="[activeTab === 'attendance' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white', sidebarCollapsed ? 'justify-center px-2' : 'justify-start text-left px-3.5']"
+                class="w-full flex items-center space-x-3 py-2.5 rounded-xl text-sm font-medium transition"
+                :title="sidebarCollapsed ? '4. Presensi Kehadiran' : ''">
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-          <span class="text-left font-semibold">4. Presensi Kehadiran</span>
+          <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">4. Presensi Kehadiran</span>
         </button>
       </nav>
     </div>
 
     <!-- User Info & Logout -->
-    <div class="p-4 border-t border-gray-800">
-      <div class="flex items-center justify-between">
-        <div class="truncate">
+    <div class="p-3 border-t border-gray-800">
+      <div class="flex items-center" :class="sidebarCollapsed ? 'justify-center' : 'justify-between'">
+        <div x-show="!sidebarCollapsed" class="truncate pr-2">
           <p class="text-sm font-semibold text-white truncate" x-text="user.full_name || 'Panitia'"></p>
           <p class="text-xs text-gray-400 truncate" x-text="user.email || ''"></p>
         </div>
-        <button @click="logout()" class="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-red-400 transition" title="Keluar">
+        <button type="button" @click="logout()" class="p-2 rounded-lg hover:bg-gray-800 text-gray-400 hover:text-red-400 transition shrink-0" title="Keluar">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
         </button>
       </div>
@@ -69,7 +90,12 @@
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
     <!-- Top Header -->
     <header class="h-16 bg-gray-900 border-b border-gray-800 px-6 flex items-center justify-between">
-      <h1 class="text-lg font-bold text-white tracking-tight" x-text="getTabTitle()"></h1>
+      <div class="flex items-center space-x-3">
+        <button type="button" @click="toggleSidebar()" class="p-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition border border-gray-700 flex items-center justify-center shadow-sm" :title="sidebarCollapsed ? 'Perluas Sidebar' : 'Persempit Sidebar'">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+        </button>
+        <h1 class="text-lg font-bold text-white tracking-tight" x-text="getTabTitle()"></h1>
+      </div>
       <div class="flex items-center space-x-3">
         <a href="/claim" target="_blank" class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-medium transition border border-gray-700 flex items-center space-x-1.5">
           <span>Portal Klaim Publik</span>
@@ -161,12 +187,18 @@
               <h2 class="text-xl font-bold text-white">Visual Template & Penempatan</h2>
               <p class="text-sm text-gray-400">Kelola multiple template per acara (cth: Presenter, Peserta, Authors), atur koordinat parameter teks, QR Code/Barcode, dan warna via Color Picker atau Kode HEX.</p>
             </div>
-            <select x-model="selectedEventId" @change="loadEventTemplates()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
-              <option value="">-- Pilih Acara --</option>
-              <template x-for="ev in events" :key="ev.id">
-                <option :value="ev.id" x-text="ev.name"></option>
-              </template>
-            </select>
+            <div class="flex items-center space-x-2">
+              <button type="button" @click="toggleSidebar()" class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 text-xs font-semibold flex items-center space-x-1.5 transition" :title="sidebarCollapsed ? 'Perluas Menu' : 'Persempit Menu (Kanvas Lebih Luas)'">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                <span x-text="sidebarCollapsed ? 'Perluas Menu' : 'Fokus Kanvas'"></span>
+              </button>
+              <select x-model="selectedEventId" @change="loadEventTemplates()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold focus:ring-2 focus:ring-indigo-500">
+                <option value="">-- Pilih Acara --</option>
+                <template x-for="ev in events" :key="ev.id">
+                  <option :value="ev.id" x-text="ev.name"></option>
+                </template>
+              </select>
+            </div>
           </div>
 
           <template x-if="selectedEventId">
@@ -1362,6 +1394,7 @@
     function dashboardApp() {
       return {
         activeTab: 'events',
+        sidebarCollapsed: false,
         user: {},
         events: [],
         papers: [],
@@ -1453,7 +1486,17 @@
           return '/' + url;
         },
 
+        toggleSidebar() {
+          this.sidebarCollapsed = !this.sidebarCollapsed;
+          try {
+            localStorage.setItem('sidebar_collapsed', this.sidebarCollapsed ? 'true' : 'false');
+          } catch (e) {}
+        },
+
         async init() {
+          try {
+            this.sidebarCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
+          } catch (e) {}
           await this.loadUserProfile();
           await this.loadEvents();
         },
