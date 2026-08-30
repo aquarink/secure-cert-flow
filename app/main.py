@@ -53,8 +53,9 @@ app = FastAPI(
     description="Automated Certificate Generator & Attendance Management System",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None
 )
 
 # Configure Cross-Origin Resource Sharing (CORS)
