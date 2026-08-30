@@ -223,6 +223,63 @@ def toggle_paper_paid(
     return paper
 
 
+@router.put("/events/{event_id}/papers/{paper_id}", response_model=PaperResponse)
+def update_paper(
+    event_id: uuid.UUID,
+    paper_id: uuid.UUID,
+    paper_in: PaperUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Updates a paper catalog entry (Organizer only).
+    Automatically syncs existing issued Author Certificate participant details and invalidates cache.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    paper = db.query(Paper).filter(Paper.id == paper_id, Paper.event_id == event_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper tidak ditemukan.")
+
+    old_title = paper.title
+    old_code = paper.paper_code
+
+    update_data = paper_in.model_dump(exclude_unset=True)
+    for field, val in update_data.items():
+        if isinstance(val, str):
+            val = val.strip()
+        setattr(paper, field, val)
+
+    # Format new combined authors name
+    raw_authors = paper.authors or ""
+    author_list = [a.strip() for a in re.split(r"[,;\n\r]+", raw_authors) if a.strip()]
+    combined_name = " - ".join(author_list) if author_list else (paper.presenter_name or "Author")
+
+    # Find any existing Author participant linked to old/new paper title or code
+    participants = db.query(Participant).filter(
+        Participant.event_id == event_id,
+        Participant.role == "Author"
+    ).all()
+
+    for p in participants:
+        p_code = p.custom_data.get("paper_code") if (p.custom_data and isinstance(p.custom_data, dict)) else None
+        if p.paper_title == old_title or (old_code and p_code == old_code):
+            p.name = combined_name
+            p.paper_title = paper.title
+            if p.custom_data is None:
+                p.custom_data = {}
+            p.custom_data["paper_code"] = paper.paper_code
+            if p.certificate:
+                p.certificate.image_url = None
+                p.certificate.checksum_sha256 = None
+
+    db.commit()
+    db.refresh(paper)
+    return paper
+
+
 @router.post("/events/{event_id}/papers/generate-author-certificates")
 def generate_author_certificates(
     event_id: uuid.UUID,
