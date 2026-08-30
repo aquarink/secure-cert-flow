@@ -32,7 +32,25 @@ def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
             pass
 
     event = cert.event
-    template = event.template if event else None
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    p = cert.participant
+    # Multi-template matching:
+    # 1. Explicit cert.template
+    # 2. Template matching participant role_target
+    # 3. Default template for event
+    template = None
+    if cert.template_id and cert.template:
+        template = cert.template
+    elif p and p.role and event.templates:
+        for t in event.templates:
+            if t.role_target and t.role_target.lower() == p.role.lower():
+                template = t
+                break
+    if not template:
+        template = event.template
+
     if not template or not template.background_image_url:
         raise HTTPException(status_code=400, detail="Template sertifikat untuk acara ini belum diunggah panitia.")
 
