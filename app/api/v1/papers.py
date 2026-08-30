@@ -304,8 +304,13 @@ def generate_author_certificates(
             while db.query(Certificate).filter(Certificate.claim_code == claim_code).first():
                 claim_code = generate_claim_code()
 
-            prefix = event.name[:4].upper().replace(" ", "C")
-            cert_num = f"{prefix}-{datetime.now().year}-{claim_code}"
+            if event.cert_prefix and event.cert_prefix.strip():
+                prefix = event.cert_prefix.strip().upper()
+                cert_num = f"{prefix}-{claim_code}"
+            else:
+                default_prefix = event.name[:4].upper().replace(" ", "C")
+                cert_num = f"{default_prefix}-{datetime.now().year}-{claim_code}"
+
             cert = Certificate(
                 event_id=event_id,
                 participant_id=p.id,
