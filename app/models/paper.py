@@ -5,7 +5,7 @@ Stores conference papers, titles, authors, and presenter mappings for each event
 
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Index
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Index, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
@@ -20,6 +20,7 @@ class Paper(Base):
     title = Column(Text, nullable=False)
     authors = Column(Text, nullable=True)  # Comma-separated or authors string
     presenter_name = Column(String(255), nullable=True)
+    is_paid = Column(Boolean, default=False, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships
