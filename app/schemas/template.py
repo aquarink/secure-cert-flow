@@ -33,6 +33,9 @@ class TemplateFieldResponse(TemplateFieldBase):
 
 
 class TemplateSetupRequest(BaseModel):
+    name: Optional[str] = None
+    role_target: Optional[str] = None
+    is_default: Optional[bool] = None
     width: Optional[int] = 1920
     height: Optional[int] = 1080
     signature_x: Optional[int] = None
@@ -54,6 +57,9 @@ class TemplateSetupRequest(BaseModel):
 class TemplateResponse(BaseModel):
     id: uuid.UUID
     event_id: uuid.UUID
+    name: str = "Template Utama"
+    role_target: str = "ALL"
+    is_default: bool = True
     background_image_url: str
     width: int
     height: int
