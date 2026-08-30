@@ -68,7 +68,8 @@ def create_paper(
         paper_code=paper_in.paper_code,
         title=paper_in.title.strip(),
         authors=paper_in.authors.strip() if paper_in.authors else None,
-        presenter_name=paper_in.presenter_name.strip() if paper_in.presenter_name else None
+        presenter_name=paper_in.presenter_name.strip() if paper_in.presenter_name else None,
+        is_paid=paper_in.is_paid
     )
     db.add(paper)
     db.commit()
@@ -95,7 +96,8 @@ def create_bulk_papers(
             paper_code=p_in.paper_code,
             title=p_in.title.strip(),
             authors=p_in.authors.strip() if p_in.authors else None,
-            presenter_name=p_in.presenter_name.strip() if p_in.presenter_name else None
+            presenter_name=p_in.presenter_name.strip() if p_in.presenter_name else None,
+            is_paid=p_in.is_paid
         )
         db.add(paper)
         created_papers.append(paper)
@@ -115,7 +117,7 @@ async def upload_papers_excel(
 ):
     """
     Bulk imports papers from spreadsheet (.xlsx, .xls, .csv).
-    Automatically maps common column headers: title, paper_code, authors, presenter.
+    Automatically maps common column headers: title, paper_code, authors, presenter, paid.
     """
     event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
     if not event:
@@ -147,6 +149,8 @@ async def upload_papers_excel(
             col_map["authors"] = col
         elif c_clean in ["presenter", "presenter_name", "nama_presenter", "pembicara"]:
             col_map["presenter_name"] = col
+        elif c_clean in ["paid", "is_paid", "lunas", "status_bayar", "payment", "bayar"]:
+            col_map["is_paid"] = col
 
     if "title" not in col_map:
         raise HTTPException(
@@ -163,13 +167,21 @@ async def upload_papers_excel(
         code_val = str(row[col_map["paper_code"]]).strip() if "paper_code" in col_map and pd.notna(row[col_map["paper_code"]]) else None
         authors_val = str(row[col_map["authors"]]).strip() if "authors" in col_map and pd.notna(row[col_map["authors"]]) else None
         presenter_val = str(row[col_map["presenter_name"]]).strip() if "presenter_name" in col_map and pd.notna(row[col_map["presenter_name"]]) else None
+        
+        # Determine is_paid
+        paid_val = False
+        if "is_paid" in col_map and pd.notna(row[col_map["is_paid"]]):
+            raw_paid = str(row[col_map["is_paid"]]).strip().lower()
+            if raw_paid in ["yes", "y", "ya", "lunas", "paid", "true", "1", "sudah", "sudah bayar", "v"]:
+                paid_val = True
 
         paper = Paper(
             event_id=event_id,
             paper_code=code_val,
             title=title_val,
             authors=authors_val,
-            presenter_name=presenter_val
+            presenter_name=presenter_val,
+            is_paid=paid_val
         )
         db.add(paper)
         created_papers.append(paper)
@@ -181,6 +193,36 @@ async def upload_papers_excel(
     return created_papers
 
 
+@router.patch("/events/{event_id}/papers/{paper_id}/toggle-paid", response_model=PaperResponse)
+def toggle_paper_paid(
+    event_id: uuid.UUID,
+    paper_id: uuid.UUID,
+    is_paid: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Toggles or sets the Paid flag for a conference paper (Organizer only).
+    Only Paid papers are allowed to have Authorship certificates generated.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    paper = db.query(Paper).filter(Paper.id == paper_id, Paper.event_id == event_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper tidak ditemukan.")
+
+    if is_paid is not None:
+        paper.is_paid = is_paid
+    else:
+        paper.is_paid = not paper.is_paid
+
+    db.commit()
+    db.refresh(paper)
+    return paper
+
+
 @router.post("/events/{event_id}/papers/generate-author-certificates")
 def generate_author_certificates(
     event_id: uuid.UUID,
@@ -189,18 +231,32 @@ def generate_author_certificates(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Generates 1 Authorship Certificate per paper in the catalog.
+    Generates 1 Authorship Certificate per PAID paper in the catalog.
     Replaces namaLengkap with all author names joined by ' - ' (e.g. Juri - Dery - Dewi).
+    Only papers with is_paid == True can be generated.
     """
     event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
 
-    query = db.query(Paper).filter(Paper.event_id == event_id)
     if paper_id:
-        query = query.filter(Paper.id == paper_id)
+        paper = db.query(Paper).filter(Paper.id == paper_id, Paper.event_id == event_id).first()
+        if not paper:
+            raise HTTPException(status_code=404, detail="Paper tidak ditemukan.")
+        if not paper.is_paid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Paper '{paper.title}' belum berstatus LUNAS (Paid). Penerbitan sertifikat hanya dapat dilakukan setelah status Paid dicentang."
+            )
+        papers = [paper]
+    else:
+        papers = db.query(Paper).filter(Paper.event_id == event_id, Paper.is_paid == True).all()
+        if not papers:
+            raise HTTPException(
+                status_code=400,
+                detail="Tidak ada paper berstatus LUNAS (Paid) yang ditemukan. Harap tandai status Paid terlebih dahulu pada paper yang ingin diterbitkan sertifikatnya."
+            )
 
-    papers = query.all()
     results = []
 
     for paper in papers:
@@ -276,7 +332,7 @@ def generate_author_certificates(
 
     db.commit()
     return {
-        "message": f"Berhasil menerbitkan {len(results)} sertifikat authorship ({len(results)} paper)!",
+        "message": f"Berhasil menerbitkan {len(results)} sertifikat authorship ({len(results)} paper berstatus Paid)!",
         "count": len(results),
         "authors": results
     }
@@ -301,6 +357,7 @@ def delete_paper(
     db.delete(paper)
     db.commit()
     return None
+
 
 @router.get("/events/{event_id}/authors-certificates")
 def list_authors_certificates(
@@ -337,3 +394,31 @@ def list_authors_certificates(
             })
 
     return results
+
+
+@router.delete("/events/{event_id}/authors-certificates/{participant_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_author_certificate(
+    event_id: uuid.UUID,
+    participant_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Deletes / revokes an issued author certificate and its participant record.
+    Allows panitia to re-generate the certificate if needed (e.g. wrong template, name typo).
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    participant = db.query(Participant).filter(
+        Participant.id == participant_id,
+        Participant.event_id == event_id,
+        Participant.role == "Author"
+    ).first()
+    if not participant:
+        raise HTTPException(status_code=404, detail="Sertifikat author tidak ditemukan.")
+
+    db.delete(participant)
+    db.commit()
+    return None
