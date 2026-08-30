@@ -109,7 +109,10 @@ async def import_participants_and_generate(
     db.flush()
 
     kafka_messages = []
-    prefix = template.cert_number_prefix or "CERT"
+    if event.cert_prefix and event.cert_prefix.strip():
+        prefix = event.cert_prefix.strip().upper()
+    else:
+        prefix = template.cert_number_prefix or "CERT"
 
     # 2. Create Participant and Certificate records
     for idx, rec in enumerate(records):
@@ -127,7 +130,10 @@ async def import_participants_and_generate(
 
         # Generate unique 8-character claim code & certificate serial number
         claim_code = generate_claim_code(8)
-        cert_number = f"{prefix}-{datetime.now().strftime('%Y%m%d')}-{claim_code}"
+        if event.cert_prefix and event.cert_prefix.strip():
+            cert_number = f"{prefix}-{claim_code}"
+        else:
+            cert_number = f"{prefix}-{datetime.now().strftime('%Y%m%d')}-{claim_code}"
 
         certificate = Certificate(
             event_id=event_id,
