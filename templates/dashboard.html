@@ -1140,6 +1140,11 @@
 
         <!-- Action Buttons -->
         <div class="space-y-2 pt-2 border-t border-gray-800">
+          <button type="button" @click="openEditPaperModal(selectedPaperAction)"
+                  class="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-indigo-900/60 text-indigo-300 hover:text-white font-bold text-xs border border-indigo-500/40 transition flex items-center justify-center space-x-1.5 shadow-sm">
+            <span>✏️ Edit Data Paper (Judul / Penulis / Presenter)</span>
+          </button>
+
           <button type="button" @click="generateSinglePaperAuthorCerts(selectedPaperAction.id); showPaperActionModal = false;"
                   :disabled="!selectedPaperAction.is_paid"
                   class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
@@ -1155,6 +1160,48 @@
             <span>🗑️ Hapus Paper Dari Katalog</span>
           </button>
         </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- MODAL: Edit Paper Modal (Update Paper / Penulis) -->
+  <div x-show="showEditPaperModal" x-cloak class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <template x-if="editingPaper">
+      <div class="bg-gray-900 border border-indigo-500/40 rounded-3xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+          <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-sm font-bold border border-indigo-500/30">✏️</div>
+            <h3 class="text-base font-bold text-white">Edit Data Paper & Penulis</h3>
+          </div>
+          <button type="button" @click="showEditPaperModal = false" class="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800">✕</button>
+        </div>
+        <form @submit.prevent="submitEditPaper()" class="space-y-3.5 text-xs">
+          <div>
+            <label class="block font-semibold text-gray-300 mb-1">Kode Paper / Karya (Opsional)</label>
+            <input type="text" x-model="editingPaper.paper_code" placeholder="ICST-001 / KARYA-A" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-300 mb-1">Judul Paper / Karya <span class="text-rose-400">*</span></label>
+            <textarea x-model="editingPaper.title" required rows="2" placeholder="Judul artikel ilmiah atau karya..." class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500"></textarea>
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-300 mb-1">Nama Para Penulis (Pisahkan dengan koma / strip)</label>
+            <input type="text" x-model="editingPaper.authors" placeholder="Prof. Dr. Ahmad Farhan, Siti Nurhaliza, M.Cs." class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+            <p class="text-[10px] text-gray-400 mt-1">Nama penulis otomatis digabungkan dengan format: <em>Penulis 1 - Penulis 2</em>.</p>
+          </div>
+          <div>
+            <label class="block font-semibold text-gray-300 mb-1">Presenter Utama</label>
+            <input type="text" x-model="editingPaper.presenter_name" placeholder="Prof. Dr. Ahmad Farhan" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+          </div>
+          <div class="flex items-center space-x-2 pt-1">
+            <input type="checkbox" id="editPaperPaidCheck" x-model="editingPaper.is_paid" class="w-4 h-4 rounded text-emerald-600 bg-gray-950 border-gray-700 focus:ring-emerald-500">
+            <label for="editPaperPaidCheck" class="text-xs text-emerald-300 font-semibold cursor-pointer">✓ Status Pembayaran LUNAS (Paid)</label>
+          </div>
+          <div class="flex justify-end space-x-2 pt-2 border-t border-gray-800">
+            <button type="button" @click="showEditPaperModal = false" class="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 text-xs font-semibold">Batal</button>
+            <button type="submit" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30">Simpan Perubahan</button>
+          </div>
+        </form>
       </div>
     </template>
   </div>
@@ -1405,7 +1452,9 @@
         editingEvent: null,
         showAddParamModal: false,
         showAddPaperModal: false,
+        showEditPaperModal: false,
         showBulkPaperModal: false,
+        editingPaper: null,
         showPreviewModal: false,
         showAuthorsResultModal: false,
         previewLoading: false,
@@ -2245,6 +2294,45 @@
             }
           } catch (e) {
             alert('Gagal menambah paper: ' + e.message);
+          }
+        },
+
+        openEditPaperModal(paper) {
+          this.editingPaper = {
+            id: paper.id,
+            paper_code: paper.paper_code || '',
+            title: paper.title || '',
+            authors: paper.authors || '',
+            presenter_name: paper.presenter_name || '',
+            is_paid: !!paper.is_paid
+          };
+          this.showPaperActionModal = false;
+          this.showEditPaperModal = true;
+        },
+
+        async submitEditPaper() {
+          if (!this.editingPaper || !this.selectedEventId) return;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/papers/${this.editingPaper.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify(this.editingPaper)
+            });
+            if (res.ok) {
+              this.showEditPaperModal = false;
+              this.editingPaper = null;
+              await this.loadPapers();
+              await this.loadAuthorCerts();
+            } else {
+              const err = await res.json();
+              alert('Gagal mengupdate paper: ' + (err.detail || 'Terjadi kesalahan'));
+            }
+          } catch (e) {
+            alert('Gagal mengupdate paper: ' + e.message);
           }
         },
 
