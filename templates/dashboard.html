@@ -788,7 +788,10 @@
                     <td class="px-4 py-3 text-gray-300" x-text="att.institution"></td>
                     <td class="px-4 py-3">
                       <span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 text-[10px] font-bold" x-text="att.role"></span>
-                      <div class="text-[11px] text-gray-400 truncate max-w-[200px]" x-text="att.paper_title || '-'"></div>
+                      <div class="text-[11px] text-gray-400 truncate max-w-[200px]">
+                        <span class="font-mono text-indigo-400 font-bold mr-1" x-show="att.paper_code" x-text="'[' + att.paper_code + ']'"></span>
+                        <span x-text="att.paper_title || '-'"></span>
+                      </div>
                     </td>
                     <td class="px-4 py-3 font-mono text-[11px]">
                       <template x-if="att.latitude && att.longitude">
@@ -2431,20 +2434,21 @@
         exportAttendancesCSV() {
           if (this.attendances.length === 0) return;
           const evt = this.getSelectedEvent();
-          let csv = "Nama Lengkap,Email,No WhatsApp/HP,Institusi,Peran,Judul Paper,Geotag,IP Address,Waktu Presensi,Kode Klaim,Tautan Sertifikat\n";
+          let csv = "Nama Lengkap,Email,No WhatsApp/HP,Institusi,Peran,Kode Paper,Judul Paper,Geotag,IP Address,Waktu Presensi,Kode Klaim,Tautan Sertifikat\n";
           this.attendances.forEach(att => {
             const name = `"${(att.full_name || '').replace(/"/g, '""')}"`;
             const email = `"${(att.email || '').replace(/"/g, '""')}"`;
             const phone = `"${(att.phone_number || '').replace(/"/g, '""')}"`;
             const inst = `"${(att.institution || '').replace(/"/g, '""')}"`;
             const role = `"${(att.role || '').replace(/"/g, '""')}"`;
+            const paperCode = `"${att.paper_code || ''}"`;
             const paper = `"${(att.paper_title || '').replace(/"/g, '""')}"`;
             const geo = `"${att.latitude && att.longitude ? (att.latitude + ', ' + att.longitude) : ''}"`;
             const ip = `"${att.ip_address || ''}"`;
             const time = `"${new Date(att.created_at).toLocaleString('id-ID')}"`;
             const claim = `"${att.claim_code || ''}"`;
             const url = att.claim_code ? `"${window.location.origin}/verify/${att.claim_code}"` : '""';
-            csv += `${name},${email},${phone},${inst},${role},${paper},${geo},${ip},${time},${claim},${url}\n`;
+            csv += `${name},${email},${phone},${inst},${role},${paperCode},${paper},${geo},${ip},${time},${claim},${url}\n`;
           });
           const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
           const url = URL.createObjectURL(blob);
