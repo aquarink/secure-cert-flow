@@ -87,7 +87,7 @@
         <template x-if="form.paper_title">
           <div class="flex justify-between border-b border-gray-800/80 pb-2">
             <span class="text-gray-500">Assigned Paper</span>
-            <span class="text-gray-300 font-sans text-right max-w-xs truncate" x-text="form.paper_title"></span>
+            <span class="text-gray-300 font-sans text-right max-w-xs truncate" x-text="(form.paper_code ? '[' + form.paper_code + '] ' : '') + form.paper_title"></span>
           </div>
         </template>
         <div class="flex justify-between border-b border-gray-800/80 pb-2">
@@ -162,21 +162,92 @@
           <input type="text" x-model="form.institution" required placeholder="Contoh: Fakultas Sains dan Teknologi, UIN Syarif Hidayatullah Jakarta" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
         </div>
 
-        <!-- 4. Role Dropdown (Default: Participant) -->
+        <!-- 4. Role Dropdown (Participant, Presenter, Author) -->
         <div class="space-y-2">
           <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Peran Kepesertaan (Participation Role) <span class="text-rose-400">*</span></label>
           <select x-model="form.role" @change="onRoleChange()" required class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition">
             <option value="Participant">Participant / Attendee / Peserta</option>
             <option value="Presenter">Presenter (Oral / Parallel Session)</option>
             <option value="Author">Author / Co-Author</option>
-            <option value="Speaker">Speaker / Narasumber / Keynote</option>
-            <option value="Trainer">Trainer / Instruktur / Fasilitator</option>
-            <option value="Guest">Guest / VIP / Undangan</option>
-            <option value="Committee">Organizing Committee / Panitia</option>
           </select>
         </div>
 
-        <!-- 4. Dynamic Paper / Topic Dropdown Search Autocomplete (Visible for Presenter) -->
+        <!-- 4.A Dedicated Paper ID Input Section (Visible for Author) -->
+        <div x-show="form.role === 'Author'" x-cloak class="space-y-3 p-5 rounded-2xl bg-indigo-950/40 border border-indigo-700/50 shadow-inner">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider">
+              Paper ID / Kode Paper <span class="text-rose-400">*</span>
+            </label>
+            <span class="text-[10px] text-gray-400">Sesuai Katalog Judul Paper</span>
+          </div>
+
+          <div class="relative">
+            <input type="text"
+                   x-model="form.paper_code"
+                   @input="onPaperCodeInput()"
+                   @change="onPaperCodeInput()"
+                   placeholder="Masukkan Paper ID Anda (contoh: 2, 3, 1570...)"
+                   class="w-full px-4 py-3 rounded-xl bg-gray-950 border text-white text-sm font-mono placeholder-gray-600 focus:ring-2 transition"
+                   :class="matchedPaper ? 'border-emerald-500 focus:ring-emerald-500/20' : (form.paper_code && form.paper_code.trim() ? 'border-rose-500 focus:ring-rose-500/20' : 'border-indigo-600 focus:ring-indigo-500/20')">
+
+            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-1 pointer-events-none">
+              <template x-if="matchedPaper">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">✓ Ditemukan</span>
+              </template>
+              <template x-if="form.paper_code && form.paper_code.trim() && !matchedPaper">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">✕ Tidak Valid</span>
+              </template>
+            </div>
+          </div>
+
+          <!-- Matched Paper Details Card -->
+          <template x-if="matchedPaper">
+            <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-1.5 text-xs transition">
+              <div class="flex items-center justify-between">
+                <span class="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Data Paper Terverifikasi</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-900/60 font-mono text-[10px] text-emerald-300 font-bold" x-text="'ID: ' + matchedPaper.paper_code"></span>
+              </div>
+              <p class="text-white font-bold leading-snug" x-text="matchedPaper.title"></p>
+              <p class="text-gray-300 text-[11px]" x-show="matchedPaper.authors" x-text="'Penulis: ' + matchedPaper.authors"></p>
+            </div>
+          </template>
+
+          <!-- Error Message when Paper ID not found -->
+          <template x-if="form.paper_code && form.paper_code.trim() && !matchedPaper">
+            <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-2">
+              <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Paper ID <strong class="font-mono text-white" x-text="form.paper_code"></strong> tidak ditemukan dalam Katalog Judul Paper acara ini.</span>
+            </div>
+          </template>
+
+          <!-- Helper toggle: Search / Browse Catalog by Title -->
+          <div class="pt-1">
+            <button type="button" @click="showPaperSearchHelper = !showPaperSearchHelper; if (showPaperSearchHelper) filterAuthorCatalog();" class="text-[11px] text-indigo-400 hover:underline flex items-center space-x-1">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              <span x-text="showPaperSearchHelper ? 'Tutup Pencarian Judul' : 'Lupa Paper ID? Cari berdasarkan Judul Paper'"></span>
+            </button>
+
+            <div x-show="showPaperSearchHelper" class="mt-2 p-3 rounded-xl bg-gray-900 border border-gray-700 space-y-2">
+              <input type="text" x-model="paperSearchQuery" @input="filterAuthorCatalog()" placeholder="Ketik kata kunci judul atau nama penulis..." class="w-full px-3 py-2 rounded-lg bg-gray-950 border border-gray-700 text-xs text-white focus:border-indigo-500">
+              <div class="max-h-44 overflow-y-auto divide-y divide-gray-800 rounded-lg bg-gray-950">
+                <template x-for="p in helperFilteredPapers" :key="p.id">
+                  <div @click="pickPaperForAuthor(p)" class="p-2.5 hover:bg-indigo-600/20 cursor-pointer text-xs transition space-y-0.5">
+                    <div class="flex items-center space-x-2">
+                      <span class="px-1.5 py-0.5 rounded bg-indigo-900/60 text-indigo-300 font-mono text-[10px] font-bold" x-text="'ID: ' + p.paper_code"></span>
+                      <span class="font-semibold text-white truncate" x-text="p.title"></span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 truncate" x-text="p.authors || '-'"></div>
+                  </div>
+                </template>
+                <template x-if="helperFilteredPapers.length === 0">
+                  <div class="p-3 text-center text-gray-500 text-xs">Tidak ada paper yang cocok di katalog.</div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4.B Dynamic Paper / Topic Dropdown Search Autocomplete (Visible for Presenter) -->
         <div x-show="form.role === 'Presenter'" x-cloak class="space-y-2 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-700/50">
           <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center justify-between">
             <span>Pilih Judul Paper yang Dipresentasikan <span class="text-rose-400">*</span></span>
@@ -288,6 +359,10 @@
         paperSearch: '',
         showPaperDropdown: false,
         filteredPapers: [],
+        matchedPaper: null,
+        showPaperSearchHelper: false,
+        paperSearchQuery: '',
+        helperFilteredPapers: [],
 
         form: {
           full_name: '',
@@ -296,6 +371,7 @@
           institution: '',
           role: 'Participant', // Default Participant
           paper_id: null,
+          paper_code: '',
           paper_title: '',
           photo_base64: '',
           latitude: null,
@@ -314,6 +390,7 @@
             if (!res.ok) throw new Error('Event not found.');
             this.eventInfo = await res.json();
             this.filteredPapers = this.eventInfo.papers || [];
+            this.helperFilteredPapers = this.eventInfo.papers || [];
           } catch (e) {
             alert('Failed to load event details: ' + e.message);
           } finally {
@@ -381,11 +458,60 @@
         },
 
         onRoleChange() {
-          if (this.form.role !== 'Presenter') {
+          if (this.form.role === 'Participant') {
+            this.form.paper_id = null;
+            this.form.paper_code = '';
+            this.form.paper_title = '';
+            this.matchedPaper = null;
+            this.paperSearch = '';
+          } else if (this.form.role === 'Author') {
+            this.onPaperCodeInput();
+          } else if (this.form.role === 'Presenter') {
+            this.filterPapers();
+          }
+        },
+
+        onPaperCodeInput() {
+          if (!this.form.paper_code || !this.form.paper_code.toString().trim()) {
+            this.matchedPaper = null;
             this.form.paper_id = null;
             this.form.paper_title = '';
-            this.paperSearch = '';
+            return;
           }
+          const code = this.form.paper_code.toString().trim().toLowerCase();
+          const found = (this.eventInfo.papers || []).find(p => 
+            p.paper_code && p.paper_code.toString().trim().toLowerCase() === code
+          );
+          if (found) {
+            this.matchedPaper = found;
+            this.form.paper_id = found.id;
+            this.form.paper_title = found.title;
+          } else {
+            this.matchedPaper = null;
+            this.form.paper_id = null;
+            this.form.paper_title = '';
+          }
+        },
+
+        filterAuthorCatalog() {
+          const q = (this.paperSearchQuery || '').toLowerCase().trim();
+          if (!q) {
+            this.helperFilteredPapers = this.eventInfo.papers || [];
+          } else {
+            this.helperFilteredPapers = (this.eventInfo.papers || []).filter(p =>
+              (p.title && p.title.toLowerCase().includes(q)) ||
+              (p.paper_code && p.paper_code.toString().toLowerCase().includes(q)) ||
+              (p.authors && p.authors.toLowerCase().includes(q))
+            );
+          }
+        },
+
+        pickPaperForAuthor(p) {
+          this.form.paper_code = p.paper_code || '';
+          this.matchedPaper = p;
+          this.form.paper_id = p.id;
+          this.form.paper_title = p.title;
+          this.showPaperSearchHelper = false;
         },
 
         filterPapers() {
@@ -396,7 +522,7 @@
           } else {
             this.filteredPapers = (this.eventInfo.papers || []).filter(p => 
               (p.title && p.title.toLowerCase().includes(q)) ||
-              (p.paper_code && p.paper_code.toLowerCase().includes(q)) ||
+              (p.paper_code && p.paper_code.toString().toLowerCase().includes(q)) ||
               (p.authors && p.authors.toLowerCase().includes(q))
             );
           }
@@ -405,6 +531,7 @@
 
         selectPaper(p) {
           this.form.paper_id = p.id;
+          this.form.paper_code = p.paper_code || '';
           this.form.paper_title = p.title;
           this.paperSearch = `${p.paper_code ? '[' + p.paper_code + '] ' : ''}${p.title}`;
           this.showPaperDropdown = false;
@@ -412,8 +539,18 @@
 
         async submitForm() {
           if (!this.form.photo_base64) {
-            alert('Please take a live photo using your camera before submitting.');
+            alert('Silakan ambil foto live menggunakan kamera sebelum mengirim presensi.');
             return;
+          }
+          if (this.form.role === 'Author') {
+            if (!this.form.paper_code || !this.form.paper_code.toString().trim()) {
+              alert('Bagi peran Author / Co-Author, wajib memasukkan Paper ID / Kode Paper yang terdaftar.');
+              return;
+            }
+            if (!this.matchedPaper || !this.form.paper_id) {
+              alert('Paper ID tidak ditemukan dalam Katalog Judul Paper acara ini. Pastikan Paper ID sudah benar dan terdaftar.');
+              return;
+            }
           }
           if (this.form.role === 'Presenter' && !this.form.paper_title) {
             alert('Silakan pilih judul paper yang Anda presentasikan.');
