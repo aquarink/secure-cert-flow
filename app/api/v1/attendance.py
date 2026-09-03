@@ -488,3 +488,55 @@ def list_event_attendances(
         })
 
     return results
+
+
+@router.delete("/events/{event_id}/attendance/reset", status_code=status.HTTP_200_OK)
+def reset_event_attendances(
+    event_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Organizer endpoint: Deletes all attendance records and linked participants/certificates for an event.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    attendances = db.query(Attendance).filter(Attendance.event_id == event_id).all()
+    count = len(attendances)
+    att_ids = [str(a.id) for a in attendances]
+
+    # Delete participants created from attendance and their certificates
+    participants = db.query(Participant).filter(Participant.event_id == event_id).all()
+    deleted_parts = 0
+    for p in participants:
+        if p.custom_data and isinstance(p.custom_data, dict):
+            if p.custom_data.get("attendance_id") in att_ids:
+                if p.certificate:
+                    db.delete(p.certificate)
+                db.delete(p)
+                deleted_parts += 1
+
+    # Delete attendance records
+    for a in attendances:
+        db.delete(a)
+
+    db.commit()
+
+    # Clean up MinIO photos
+    try:
+        bucket = settings.MINIO_BUCKET_CERTIFICATES
+        prefix = f"attendances/{event_id}/"
+        objects = list(minio_service.client.list_objects(bucket, prefix=prefix, recursive=True))
+        for obj in objects:
+            minio_service.client.remove_object(bucket, obj.object_name)
+    except Exception as e:
+        print(f"Warning: MinIO cleanup error: {e}")
+
+    return {
+        "success": True,
+        "deleted_attendances": count,
+        "deleted_participants": deleted_parts,
+        "message": f"Berhasil menghapus {count} data presensi kehadiran dan sertifikat terkait."
+    }
