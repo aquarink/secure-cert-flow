@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status, Query, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 
 from app.database import get_db
 from app.models import Event, Paper, Attendance, User, Participant, Certificate
@@ -110,12 +110,29 @@ def submit_attendance_check_in(
     client_ip = extract_client_ip(request)
     user_agent = request.headers.get("user-agent", "Unknown Device")
 
-    # 3. Resolve Paper Title if paper_id provided (for Presenter)
+    # 3. Resolve Paper Title & Code if paper_id or paper_code provided (for Presenter / Author)
     final_paper_title = check_in.paper_title
+    paper_obj = None
     if check_in.paper_id:
         paper_obj = db.query(Paper).filter(Paper.id == check_in.paper_id, Paper.event_id == event_id).first()
-        if paper_obj:
-            final_paper_title = paper_obj.title
+    elif check_in.paper_code and check_in.paper_code.strip():
+        code_clean = check_in.paper_code.strip()
+        paper_obj = db.query(Paper).filter(
+            Paper.event_id == event_id,
+            func.lower(Paper.paper_code) == code_clean.lower()
+        ).first()
+
+    if paper_obj:
+        final_paper_title = paper_obj.title
+        check_in.paper_id = paper_obj.id
+
+    # Strict validation: Author MUST have a valid registered paper in the event catalog
+    if check_in.role == "Author":
+        if not paper_obj:
+            raise HTTPException(
+                status_code=400,
+                detail="Paper ID / Kode Paper tidak ditemukan di Katalog Judul Paper acara ini. Pastikan Paper ID Anda sudah terdaftar."
+            )
 
     # 4. Save Attendance Record
     attendance = Attendance(
@@ -160,7 +177,9 @@ def submit_attendance_check_in(
         custom_data={
             "institution": attendance.institution,
             "phone_number": attendance.phone_number or "",
-            "attendance_id": str(attendance.id)
+            "attendance_id": str(attendance.id),
+            "paper_code": paper_obj.paper_code if paper_obj else (check_in.paper_code or ""),
+            "paper_id": str(paper_obj.id) if paper_obj else ""
         }
     )
     db.add(participant)
@@ -234,10 +253,15 @@ def list_event_attendances(
         if p and p.certificate:
             code = p.certificate.claim_code
 
+        paper_code_val = att.paper.paper_code if att.paper else (
+            p.custom_data.get("paper_code") if (p and p.custom_data and isinstance(p.custom_data, dict)) else None
+        )
+
         results.append({
             "id": att.id,
             "event_id": att.event_id,
             "paper_id": att.paper_id,
+            "paper_code": paper_code_val,
             "full_name": att.full_name,
             "email": att.email,
             "phone_number": att.phone_number,
