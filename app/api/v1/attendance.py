@@ -49,12 +49,19 @@ def clean_name_tokens(name: str) -> list[str]:
 
 
 def parse_paper_authors(authors_str: str) -> list[str]:
-    """Splits author names separated by commas, semicolons, and, &, or newlines"""
+    """Splits author names separated by commas, semicolons, and, &, or newlines while preserving academic degree postfixes"""
     if not authors_str:
         return []
     s = re.sub(r'\s+(and|&)\s+', ',', authors_str, flags=re.IGNORECASE)
-    parts = re.split(r'[,;\n\r]+', s)
-    return [p.strip() for p in parts if p.strip()]
+    raw_parts = [p.strip() for p in re.split(r'[,;\n\r]+', s) if p.strip()]
+    combined = []
+    for part in raw_parts:
+        # If part has no name tokens (only degree or title like M.Kom, Ph.D, S.T.), re-attach to previous author
+        if combined and len(clean_name_tokens(part)) == 0:
+            combined[-1] = f"{combined[-1]}, {part}"
+        else:
+            combined.append(part)
+    return combined
 
 
 def match_author_name(input_name: str, author_list: list[str]) -> tuple[bool, Optional[str]]:
