@@ -5,6 +5,7 @@ Handles live check-in with camera selfie capture, geolocation, IP logging, and i
 
 import io
 import os
+import re
 import uuid
 import base64
 from datetime import datetime, timezone
@@ -34,6 +35,201 @@ def extract_client_ip(request: Request) -> str:
     if request.client:
         return request.client.host
     return "127.0.0.1"
+
+
+def clean_name_tokens(name: str) -> list[str]:
+    """Strips academic titles, degrees, and special characters to extract essential name tokens"""
+    if not name:
+        return []
+    s = name.lower()
+    titles_pattern = r'\b(prof|dr|dra|drs|ir|apt|phd|ph\.d|msc|m\.sc|mkom|m\.kom|skom|s\.kom|mt|m\.t|st|s\.t|mcs|m\.cs|msi|m\.si|ssi|s\.si|mpd|m\.pd|spd|s\.pd|meng|m\.eng|beng|b\.eng|bsc|b\.sc|ba|b\.a|ma|m\.a|llm|ll\.m|sh|s\.h|mh|m\.h|se|s\.e|mm|m\.m|akt|ak|h|hj|kh)\b'
+    s = re.sub(titles_pattern, ' ', s)
+    s = re.sub(r'[^a-z\s]', ' ', s)
+    return [w for w in s.split() if len(w) >= 2]
+
+
+def parse_paper_authors(authors_str: str) -> list[str]:
+    """Splits author names separated by commas, semicolons, and, &, or newlines"""
+    if not authors_str:
+        return []
+    s = re.sub(r'\s+(and|&)\s+', ',', authors_str, flags=re.IGNORECASE)
+    parts = re.split(r'[,;\n\r]+', s)
+    return [p.strip() for p in parts if p.strip()]
+
+
+def match_author_name(input_name: str, author_list: list[str]) -> tuple[bool, Optional[str]]:
+    """Checks if input_name matches any author in author_list"""
+    if not input_name or not author_list:
+        return False, None
+
+    input_tokens = set(clean_name_tokens(input_name))
+    if not input_tokens:
+        return False, None
+
+    for author in author_list:
+        author_tokens = set(clean_name_tokens(author))
+        if not author_tokens:
+            continue
+        if input_tokens == author_tokens:
+            return True, author
+        common = input_tokens.intersection(author_tokens)
+        if len(common) >= 2:
+            return True, author
+        if len(input_tokens) == 1 and len(common) == 1:
+            if len(author_tokens) == 1:
+                return True, author
+            first_token = list(input_tokens)[0]
+            if len(first_token) >= 4 and first_token in author_tokens:
+                return True, author
+
+    return False, None
+
+
+def is_name_match(name1: str, name2: str) -> bool:
+    """Helper to check if two person names match (handling titles/degrees)"""
+    tokens1 = set(clean_name_tokens(name1))
+    tokens2 = set(clean_name_tokens(name2))
+    if not tokens1 or not tokens2:
+        return False
+    if tokens1 == tokens2:
+        return True
+    common = tokens1.intersection(tokens2)
+    if len(common) >= 2:
+        return True
+    if (len(tokens1) == 1 or len(tokens2) == 1) and len(common) == 1:
+        single = list(tokens1 if len(tokens1) == 1 else tokens2)[0]
+        if len(single) >= 4:
+            return True
+    return False
+
+
+def verify_author_paper_status(db: Session, event_id: uuid.UUID, paper: Paper, full_name: str) -> dict:
+    """
+    Validates:
+    1. If full_name exists in paper's author list.
+    2. If this Paper ID + Author has already been checked in or claimed.
+    """
+    author_list = parse_paper_authors(paper.authors or "")
+    
+    if not full_name or not full_name.strip():
+        return {
+            "status": "NAME_REQUIRED",
+            "is_valid": False,
+            "is_claimed": False,
+            "matched_author": None,
+            "author_list": author_list,
+            "message": "Silakan isi Nama Lengkap & Gelar Anda terlebih dahulu."
+        }
+
+    is_match, matched_author = match_author_name(full_name, author_list)
+    if not is_match:
+        authors_display = ", ".join(author_list) if author_list else (paper.authors or "-")
+        return {
+            "status": "NAME_MISMATCH",
+            "is_valid": False,
+            "is_claimed": False,
+            "matched_author": None,
+            "author_list": author_list,
+            "message": f"Nama '{full_name}' tidak terdaftar sebagai penulis pada Paper ID {paper.paper_code or ''}. Daftar Penulis: {authors_display}. Pastikan nama yang Anda masukkan sesuai dengan nama penulis di paper."
+        }
+
+    # Check if this author has already checked in or claimed
+    # 1. Check Attendance table for this paper
+    existing_attendances = db.query(Attendance).filter(
+        Attendance.event_id == event_id,
+        Attendance.paper_id == paper.id,
+        Attendance.role == "Author"
+    ).all()
+
+    for att in existing_attendances:
+        if is_name_match(full_name, att.full_name) or (matched_author and is_name_match(matched_author, att.full_name)):
+            p = db.query(Participant).filter(
+                Participant.event_id == event_id,
+                Participant.name == att.full_name,
+                Participant.role == "Author"
+            ).order_by(Participant.created_at.desc()).first()
+            claim_code = p.certificate.claim_code if (p and p.certificate) else None
+            return {
+                "status": "ALREADY_CLAIMED",
+                "is_valid": False,
+                "is_claimed": True,
+                "matched_author": matched_author,
+                "author_list": author_list,
+                "claim_code": claim_code,
+                "message": f"Paper ID ({paper.paper_code or ''}) untuk Author ({matched_author or full_name}) sudah pernah didaftarkan / diklaim. Silakan ke https://sertifikat.uinjakarta.id/claim dan masukkan kode yang Anda terima pada saat mendaftar."
+            }
+
+    # 2. Check Participant records for this paper (direct participant or legacy)
+    existing_participants = db.query(Participant).filter(
+        Participant.event_id == event_id,
+        Participant.role == "Author"
+    ).all()
+
+    for p in existing_participants:
+        p_code = p.custom_data.get("paper_code") if (p.custom_data and isinstance(p.custom_data, dict)) else None
+        if p.paper_title == paper.title or (paper.paper_code and p_code == paper.paper_code):
+            if is_name_match(full_name, p.name) or (matched_author and is_name_match(matched_author, p.name)):
+                claim_code = p.certificate.claim_code if p.certificate else None
+                return {
+                    "status": "ALREADY_CLAIMED",
+                    "is_valid": False,
+                    "is_claimed": True,
+                    "matched_author": matched_author,
+                    "author_list": author_list,
+                    "claim_code": claim_code,
+                    "message": f"Paper ID ({paper.paper_code or ''}) untuk Author ({matched_author or full_name}) sudah pernah didaftarkan / diklaim. Silakan ke https://sertifikat.uinjakarta.id/claim dan masukkan kode yang Anda terima pada saat mendaftar."
+                }
+
+    return {
+        "status": "OK",
+        "is_valid": True,
+        "is_claimed": False,
+        "matched_author": matched_author,
+        "author_list": author_list,
+        "message": f"Nama terverifikasi sah sebagai penulis: {matched_author}."
+    }
+
+
+@router.get("/events/{event_id}/attendance/check-author")
+def check_author_status_endpoint(
+    event_id: uuid.UUID,
+    paper_code: Optional[str] = None,
+    paper_id: Optional[uuid.UUID] = None,
+    full_name: str = Query("", description="Nama lengkap peserta"),
+    db: Session = Depends(get_db)
+):
+    """
+    Real-time validation endpoint:
+    Checks if full_name is in the paper's author list and whether Paper ID + Author has already been claimed.
+    """
+    paper_obj = None
+    if paper_id:
+        paper_obj = db.query(Paper).filter(Paper.id == paper_id, Paper.event_id == event_id).first()
+    elif paper_code and paper_code.strip():
+        code_clean = paper_code.strip()
+        paper_obj = db.query(Paper).filter(
+            Paper.event_id == event_id,
+            func.lower(Paper.paper_code) == code_clean.lower()
+        ).first()
+
+    if not paper_obj:
+        return {
+            "status": "NOT_FOUND",
+            "is_valid": False,
+            "is_claimed": False,
+            "matched_author": None,
+            "author_list": [],
+            "message": "Paper ID / Kode Paper tidak ditemukan di Katalog Judul Paper acara ini."
+        }
+
+    res = verify_author_paper_status(db, event_id, paper_obj, full_name)
+    res["paper"] = {
+        "id": str(paper_obj.id),
+        "paper_code": paper_obj.paper_code or "",
+        "title": paper_obj.title,
+        "authors": paper_obj.authors or ""
+    }
+    return res
 
 
 @router.get("/events/{event_id}/attendance/public-info")
@@ -126,12 +322,18 @@ def submit_attendance_check_in(
         final_paper_title = paper_obj.title
         check_in.paper_id = paper_obj.id
 
-    # Strict validation: Author MUST have a valid registered paper in the event catalog
+    # Strict validation: Author MUST have a valid registered paper, match author list, and not already claimed
     if check_in.role == "Author":
         if not paper_obj:
             raise HTTPException(
                 status_code=400,
                 detail="Paper ID / Kode Paper tidak ditemukan di Katalog Judul Paper acara ini. Pastikan Paper ID Anda sudah terdaftar."
+            )
+        author_check = verify_author_paper_status(db, event_id, paper_obj, check_in.full_name)
+        if author_check["status"] != "OK":
+            raise HTTPException(
+                status_code=400,
+                detail=author_check["message"]
             )
 
     # 4. Save Attendance Record
