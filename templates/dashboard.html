@@ -734,6 +734,9 @@
                     <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <span>Export CSV</span>
                   </button>
+                  <button @click="resetAttendances()" :disabled="attendances.length === 0" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-rose-950/60 disabled:opacity-40 text-rose-400 hover:text-rose-300 text-xs font-semibold border border-gray-700 hover:border-rose-700/50 transition flex items-center space-x-1.5 shadow-md">
+                    <span>🗑️ Reset Log Presensi</span>
+                  </button>
                   <button @click="toggleCertRelease(getSelectedEvent())" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md" :class="getSelectedEvent()?.is_cert_open ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-gray-800 hover:bg-gray-700 text-amber-400 border border-amber-500/40'">
                     <span x-text="getSelectedEvent()?.is_cert_open ? '🔓 Unduh Sertifikat Dibuka' : '🔒 Unduh Sertifikat Dikunci'"></span>
                   </button>
@@ -2460,6 +2463,30 @@
 
         previewPhoto(url) {
           window.open(url, '_blank');
+        },
+
+        async resetAttendances() {
+          if (!this.selectedEventId) return;
+          if (!confirm('Apakah Anda yakin ingin menghapus seluruh log presensi kehadiran untuk acara ini? Tindakan ini akan mengosongkan log presensi dan sertifikat peserta presensi agar Anda dapat melakukan pengujian ulang dari awal.')) {
+            return;
+          }
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/attendance/reset`, {
+              method: 'DELETE',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              const data = await res.json();
+              alert(data.message || 'Presensi berhasil direset.');
+              await this.loadAttendances();
+            } else {
+              const err = await res.json();
+              alert('Gagal mereset presensi: ' + (err.detail || 'Terjadi kesalahan'));
+            }
+          } catch (e) {
+            alert('Gagal mereset presensi: ' + e.message);
+          }
         },
 
         logout() {
