@@ -13,8 +13,9 @@ class AttendanceCreate(BaseModel):
     email: Optional[str] = Field(None, min_length=3, max_length=255, example="ahmad.farhan@uinjkt.ac.id")
     phone_number: Optional[str] = Field(None, min_length=6, max_length=50, example="081234567890")
     institution: str = Field(..., min_length=2, max_length=255, example="UIN Syarif Hidayatullah Jakarta")
-    role: str = Field("Participant", example="Participant")  # Participant, Presenter, Author, Speaker, Guest, Committee
+    role: str = Field("Participant", example="Participant")  # Participant, Presenter, Author
     paper_id: Optional[uuid.UUID] = None
+    paper_code: Optional[str] = None
     paper_title: Optional[str] = None
     photo_base64: str = Field(..., description="Live captured camera frame in base64 format")
     latitude: Optional[float] = None
@@ -26,6 +27,7 @@ class AttendanceResponse(BaseModel):
     id: uuid.UUID
     event_id: uuid.UUID
     paper_id: Optional[uuid.UUID] = None
+    paper_code: Optional[str] = None
     full_name: str
     email: Optional[str] = None
     phone_number: Optional[str] = None
