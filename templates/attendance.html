@@ -138,7 +138,7 @@
         <!-- 1. Name and Title -->
         <div class="space-y-2">
           <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Nama Lengkap & Gelar (Full Name) <span class="text-rose-400">*</span></label>
-          <input type="text" x-model="form.full_name" required placeholder="Contoh: Prof. Dr. Ahmad Farhan, M.Kom." class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
+          <input type="text" x-model="form.full_name" @input="onFullNameInput()" required placeholder="Contoh: Prof. Dr. Ahmad Farhan, M.Kom." class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
         </div>
 
         <!-- 2. Email Aktif & Nomor WhatsApp/Telepon -->
@@ -188,37 +188,78 @@
                    @change="onPaperCodeInput()"
                    placeholder="Masukkan Paper ID Anda (contoh: 2, 3, 1570...)"
                    class="w-full px-4 py-3 rounded-xl bg-gray-950 border text-white text-sm font-mono placeholder-gray-600 focus:ring-2 transition"
-                   :class="matchedPaper ? 'border-emerald-500 focus:ring-emerald-500/20' : (form.paper_code && form.paper_code.trim() ? 'border-rose-500 focus:ring-rose-500/20' : 'border-indigo-600 focus:ring-indigo-500/20')">
+                   :class="authorCheck.status === 'OK' ? 'border-emerald-500 focus:ring-emerald-500/20' : (authorCheck.status === 'ALREADY_CLAIMED' ? 'border-amber-500 focus:ring-amber-500/20' : (form.paper_code && form.paper_code.trim() && (authorCheck.status === 'NAME_MISMATCH' || !matchedPaper) ? 'border-rose-500 focus:ring-rose-500/20' : 'border-indigo-600 focus:ring-indigo-500/20'))">
 
             <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-1 pointer-events-none">
-              <template x-if="matchedPaper">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">✓ Ditemukan</span>
+              <template x-if="authorCheckLoading">
+                <span class="text-xs text-indigo-400 animate-spin">⌛</span>
               </template>
-              <template x-if="form.paper_code && form.paper_code.trim() && !matchedPaper">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">✕ Tidak Valid</span>
+              <template x-if="!authorCheckLoading && authorCheck.status === 'OK'">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">✓ Sah</span>
+              </template>
+              <template x-if="!authorCheckLoading && authorCheck.status === 'ALREADY_CLAIMED'">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">⚠️ Sudah Diklaim</span>
+              </template>
+              <template x-if="!authorCheckLoading && (authorCheck.status === 'NAME_MISMATCH' || (form.paper_code && form.paper_code.trim() && !matchedPaper))">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">✕ Ditolak</span>
               </template>
             </div>
           </div>
 
-          <!-- Matched Paper Details Card -->
-          <template x-if="matchedPaper">
-            <div class="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-1.5 text-xs transition">
-              <div class="flex items-center justify-between">
-                <span class="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">Data Paper Terverifikasi</span>
-                <span class="px-2 py-0.5 rounded bg-emerald-900/60 font-mono text-[10px] text-emerald-300 font-bold" x-text="'ID: ' + matchedPaper.paper_code"></span>
-              </div>
-              <p class="text-white font-bold leading-snug" x-text="matchedPaper.title"></p>
-              <p class="text-gray-300 text-[11px]" x-show="matchedPaper.authors" x-text="'Penulis: ' + matchedPaper.authors"></p>
-            </div>
-          </template>
+          <!-- Loading Indicator -->
+          <div x-show="authorCheckLoading" class="p-3 rounded-xl bg-gray-900 border border-indigo-700/40 text-xs text-indigo-300 flex items-center space-x-2">
+            <svg class="w-4 h-4 animate-spin text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <span>Memverifikasi status kepenulisan di katalog...</span>
+          </div>
 
-          <!-- Error Message when Paper ID not found -->
-          <template x-if="form.paper_code && form.paper_code.trim() && !matchedPaper">
-            <div class="p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-2">
-              <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <span>Paper ID <strong class="font-mono text-white" x-text="form.paper_code"></strong> tidak ditemukan dalam Katalog Judul Paper acara ini.</span>
+          <!-- Prompt: Fill name first -->
+          <div x-show="!authorCheckLoading && matchedPaper && (!form.full_name || !form.full_name.trim())" class="p-3.5 rounded-xl bg-indigo-950/60 border border-indigo-700/50 text-indigo-200 text-xs flex items-center space-x-2">
+            <span class="text-base">ℹ️</span>
+            <span>Silakan isi <strong>Nama Lengkap & Gelar</strong> di atas untuk memverifikasi apakah Anda terdaftar pada paper ini.</span>
+          </div>
+
+          <!-- 1. Matched Paper & Valid Author Details Card -->
+          <div x-show="!authorCheckLoading && authorCheck.status === 'OK'" class="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/50 space-y-2 text-xs transition shadow-lg shadow-emerald-950/40">
+            <div class="flex items-center justify-between">
+              <span class="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">✓ Penulis Terverifikasi Sah</span>
+              <span class="px-2 py-0.5 rounded bg-emerald-900/60 font-mono text-[10px] text-emerald-300 font-bold" x-text="'ID: ' + (matchedPaper ? matchedPaper.paper_code : form.paper_code)"></span>
             </div>
-          </template>
+            <p class="text-white font-bold leading-snug" x-text="matchedPaper?.title"></p>
+            <div class="text-[11px] text-emerald-300">
+              <span>Penulis Terdaftar: </span><strong class="text-white" x-text="authorCheck.matched_author"></strong>
+            </div>
+            <p class="text-gray-400 text-[10px]" x-show="matchedPaper?.authors" x-text="'Daftar Seluruh Penulis: ' + matchedPaper?.authors"></p>
+          </div>
+
+          <!-- 2. ALREADY CLAIMED Warning Card -->
+          <div x-show="!authorCheckLoading && authorCheck.status === 'ALREADY_CLAIMED'" class="p-4 rounded-xl bg-amber-950/40 border border-amber-500/60 space-y-2.5 text-xs text-amber-200 transition shadow-xl">
+            <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <span>Paper ID & Author Sudah Pernah Diklaim</span>
+            </div>
+            <p class="leading-relaxed font-medium" x-text="authorCheck.message"></p>
+            <div class="pt-1">
+              <a href="https://sertifikat.uinjakarta.id/claim" target="_blank" class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-extrabold text-xs transition shadow-md">
+                <span>Buka https://sertifikat.uinjakarta.id/claim</span>
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- 3. NAME MISMATCH Error Card -->
+          <div x-show="!authorCheckLoading && authorCheck.status === 'NAME_MISMATCH'" class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 space-y-2 text-xs text-rose-300 transition shadow-lg">
+            <div class="flex items-center space-x-2 text-rose-400 font-bold text-xs">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Nama Tidak Sesuai Daftar Penulis Paper Ini</span>
+            </div>
+            <p class="text-gray-300 leading-relaxed" x-text="authorCheck.message"></p>
+          </div>
+
+          <!-- 4. NOT FOUND Error Message -->
+          <div x-show="!authorCheckLoading && form.paper_code && form.paper_code.trim() && (!matchedPaper || authorCheck.status === 'NOT_FOUND')" class="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-2">
+            <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Paper ID <strong class="font-mono text-white" x-text="form.paper_code"></strong> tidak ditemukan dalam Katalog Judul Paper acara ini.</span>
+          </div>
 
           <!-- Helper toggle: Search / Browse Catalog by Title -->
           <div class="pt-1">
@@ -325,8 +366,8 @@
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" :disabled="submitting || !cameraReady || !locationReady || !photoCaptured" class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm transition shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2">
-          <span x-text="submitting ? 'Verifying & Submitting Check-In...' : 'Submit Official Attendance Check-In'"></span>
+        <button type="submit" :disabled="submitting || !cameraReady || !locationReady || !photoCaptured || (form.role === 'Author' && (authorCheck.status === 'ALREADY_CLAIMED' || authorCheck.status === 'NAME_MISMATCH' || authorCheck.status === 'NAME_REQUIRED' || !matchedPaper))" class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm transition shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2">
+          <span x-text="submitting ? 'Memproses Presensi...' : (form.role === 'Author' && authorCheck.status === 'ALREADY_CLAIMED' ? 'Presensi Sudah Pernah Diklaim' : (form.role === 'Author' && authorCheck.status === 'NAME_MISMATCH' ? 'Nama Tidak Sesuai Daftar Penulis' : 'Kirim Presensi Kehadiran Resmi'))"></span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
 
@@ -363,6 +404,10 @@
         showPaperSearchHelper: false,
         paperSearchQuery: '',
         helperFilteredPapers: [],
+
+        // Author validation state
+        authorCheck: { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false },
+        authorCheckLoading: false,
 
         form: {
           full_name: '',
@@ -464,10 +509,56 @@
             this.form.paper_title = '';
             this.matchedPaper = null;
             this.paperSearch = '';
+            this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
           } else if (this.form.role === 'Author') {
             this.onPaperCodeInput();
           } else if (this.form.role === 'Presenter') {
             this.filterPapers();
+          }
+        },
+
+        async checkAuthorValidity() {
+          if (this.form.role !== 'Author') return;
+          if (!this.form.paper_code || !this.form.paper_code.toString().trim()) {
+            this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
+            return;
+          }
+          if (!this.form.full_name || !this.form.full_name.trim()) {
+            this.authorCheck = {
+              status: 'NAME_REQUIRED',
+              message: 'Silakan isi Nama Lengkap & Gelar Anda di atas untuk memverifikasi kepenulisan paper.',
+              matched_author: '',
+              is_claimed: false,
+              is_valid: false
+            };
+            return;
+          }
+
+          this.authorCheckLoading = true;
+          try {
+            const params = new URLSearchParams({
+              paper_code: this.form.paper_code.toString().trim(),
+              full_name: this.form.full_name.trim()
+            });
+            const res = await fetch(`/api/v1/events/${this.eventId}/attendance/check-author?${params}`);
+            if (res.ok) {
+              const data = await res.json();
+              this.authorCheck = data;
+              if (data.status === 'OK' && data.paper) {
+                this.form.paper_id = data.paper.id;
+                this.form.paper_title = data.paper.title;
+              }
+            }
+          } catch (e) {
+            console.error('Check author error:', e);
+          } finally {
+            this.authorCheckLoading = false;
+          }
+        },
+
+        onFullNameInput() {
+          if (this.form.role === 'Author' && this.form.paper_code) {
+            this.checkAuthorValidity();
           }
         },
 
@@ -476,6 +567,7 @@
             this.matchedPaper = null;
             this.form.paper_id = null;
             this.form.paper_title = '';
+            this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
             return;
           }
           const code = this.form.paper_code.toString().trim().toLowerCase();
@@ -486,10 +578,18 @@
             this.matchedPaper = found;
             this.form.paper_id = found.id;
             this.form.paper_title = found.title;
+            this.checkAuthorValidity();
           } else {
             this.matchedPaper = null;
             this.form.paper_id = null;
             this.form.paper_title = '';
+            this.authorCheck = {
+              status: 'NOT_FOUND',
+              message: `Paper ID "${this.form.paper_code}" tidak ditemukan dalam Katalog Judul Paper acara ini.`,
+              matched_author: '',
+              is_claimed: false,
+              is_valid: false
+            };
           }
         },
 
@@ -512,6 +612,7 @@
           this.form.paper_id = p.id;
           this.form.paper_title = p.title;
           this.showPaperSearchHelper = false;
+          this.checkAuthorValidity();
         },
 
         filterPapers() {
@@ -549,6 +650,24 @@
             }
             if (!this.matchedPaper || !this.form.paper_id) {
               alert('Paper ID tidak ditemukan dalam Katalog Judul Paper acara ini. Pastikan Paper ID sudah benar dan terdaftar.');
+              return;
+            }
+            // Double check validation before submitting
+            await this.checkAuthorValidity();
+            if (this.authorCheck.status === 'NAME_REQUIRED') {
+              alert('Silakan isi Nama Lengkap & Gelar Anda terlebih dahulu.');
+              return;
+            }
+            if (this.authorCheck.status === 'ALREADY_CLAIMED') {
+              alert(this.authorCheck.message);
+              return;
+            }
+            if (this.authorCheck.status === 'NAME_MISMATCH') {
+              alert(this.authorCheck.message);
+              return;
+            }
+            if (this.authorCheck.status !== 'OK') {
+              alert(this.authorCheck.message || 'Verifikasi kepenulisan gagal.');
               return;
             }
           }
