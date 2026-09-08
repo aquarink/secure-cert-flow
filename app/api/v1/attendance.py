@@ -42,7 +42,7 @@ def clean_name_tokens(name: str) -> list[str]:
     if not name:
         return []
     s = name.lower()
-    titles_pattern = r'\b(prof|dr|dra|drs|ir|apt|phd|ph\.d|msc|m\.sc|mkom|m\.kom|skom|s\.kom|mt|m\.t|st|s\.t|mcs|m\.cs|msi|m\.si|ssi|s\.si|mpd|m\.pd|spd|s\.pd|meng|m\.eng|beng|b\.eng|bsc|b\.sc|ba|b\.a|ma|m\.a|llm|ll\.m|sh|s\.h|mh|m\.h|se|s\.e|mm|m\.m|akt|ak|h|hj|kh)\b'
+    titles_pattern = r'\b(prof|dr|dra|drs|ir|apt|phd|ph\.d|msc|m\.sc|mkom|m\.kom|skom|s\.kom|mt|m\.t|st|s\.t|mcs|m\.cs|msi|m\.si|ssi|s\.si|mpd|m\.pd|spd|s\.pd|meng|m\.eng|beng|b\.eng|bsc|b\.sc|ba|b\.a|ma|m\.a|llm|ll\.m|sh|s\.h|mh|m\.h|se|s\.e|mm|m\.m|akt|ak|h|hj|kh|mba|m\.ba|cpa|cma|cfa|sfarm|s\.farm|mfarm|m\.farm|spsi|s\.psi|mpsi|m\.psi|sp|s\.p|mp|m\.p|spt|s\.pt|mpt|m\.pt|ssn|s\.sn|msn|m\.sn|ssos|s\.sos|msos|m\.sos|mkn|m\.kn)\b'
     s = re.sub(titles_pattern, ' ', s)
     s = re.sub(r'[^a-z\s]', ' ', s)
     return [w for w in s.split() if len(w) >= 2]
@@ -239,6 +239,48 @@ def check_author_status_endpoint(
     return res
 
 
+@router.get("/events/{event_id}/attendance/my-papers")
+def get_my_papers_endpoint(
+    event_id: uuid.UUID,
+    full_name: str = Query("", description="Nama lengkap peserta"),
+    db: Session = Depends(get_db)
+):
+    """
+    Find all papers in this event matching the attendee's full name (stripping academic titles & degrees).
+    Used to strictly filter available papers for Presenter and Author roles so users cannot overclaim.
+    """
+    if not full_name or not full_name.strip() or len(full_name.strip()) < 2:
+        return {"full_name": full_name, "count": 0, "papers": []}
+
+    papers = db.query(Paper).filter(Paper.event_id == event_id).order_by(Paper.paper_code.asc()).all()
+    matched_papers = []
+
+    for p in papers:
+        authors = parse_paper_authors(p.authors or "")
+        is_author, matched_author = match_author_name(full_name, authors)
+        is_presenter = False
+        if not is_author and p.presenter_name:
+            is_presenter, _ = match_author_name(full_name, [p.presenter_name])
+
+        if is_author or is_presenter:
+            matched_papers.append({
+                "id": str(p.id),
+                "paper_code": p.paper_code or "",
+                "title": p.title,
+                "authors": p.authors or "",
+                "presenter_name": p.presenter_name or "",
+                "matched_author": matched_author or p.presenter_name or "",
+                "is_paid": p.is_paid if hasattr(p, "is_paid") else True
+            })
+
+    return {
+        "full_name": full_name,
+        "clean_tokens": clean_name_tokens(full_name),
+        "count": len(matched_papers),
+        "papers": matched_papers
+    }
+
+
 @router.get("/events/{event_id}/attendance/public-info")
 def get_public_attendance_info(event_id: uuid.UUID, db: Session = Depends(get_db)):
     """
@@ -324,6 +366,11 @@ def submit_attendance_check_in(
             Paper.event_id == event_id,
             func.lower(Paper.paper_code) == code_clean.lower()
         ).first()
+    elif check_in.paper_title and check_in.paper_title.strip():
+        paper_obj = db.query(Paper).filter(
+            Paper.event_id == event_id,
+            func.lower(Paper.title) == check_in.paper_title.strip().lower()
+        ).first()
 
     if paper_obj:
         final_paper_title = paper_obj.title
@@ -341,6 +388,22 @@ def submit_attendance_check_in(
             raise HTTPException(
                 status_code=400,
                 detail=author_check["message"]
+            )
+
+    # Strict validation: Presenter MUST have a valid registered paper and name must match authors or presenter_name
+    if check_in.role == "Presenter":
+        if not paper_obj:
+            raise HTTPException(
+                status_code=400,
+                detail="Judul Paper yang Anda presentasikan tidak ditemukan di Katalog Judul Paper acara ini. Pastikan Anda memilih paper yang terdaftar."
+            )
+        is_match, _ = match_author_name(check_in.full_name, parse_paper_authors(paper_obj.authors or ""))
+        if not is_match and paper_obj.presenter_name:
+            is_match, _ = match_author_name(check_in.full_name, [paper_obj.presenter_name])
+        if not is_match:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Nama '{check_in.full_name}' tidak terdaftar sebagai penulis maupun presenter pada paper ID {paper_obj.paper_code or ''} ('{paper_obj.title}'). Anda hanya dapat memilih paper yang memuat nama Anda."
             )
 
     # 4. Save Attendance Record
