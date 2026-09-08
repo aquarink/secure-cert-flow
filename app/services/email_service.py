@@ -56,8 +56,8 @@ class EmailService:
 
         paper_text_snippet = f"\nPaper: {paper_title}" if paper_title else ""
         paper_html_snippet = f"""
-        <div style="margin: 6px 0; font-size: 13px; color: #475569;">
-          <strong>Paper:</strong> <span style="color: #1e293b;">{paper_title}</span>
+        <div style="margin: 6px 0; font-size: 13px; color: #94a3b8;">
+          <strong style="color:#cbd5e1;">Paper:</strong> <span style="color: #f1f5f9;">{paper_title}</span>
         </div>
         """ if paper_title else ""
 
@@ -95,30 +95,38 @@ UIN Syarif Hidayatullah Jakarta
 You received this notification because your email ({to_email}) was submitted during check-in for {event_name}.
 """
 
-        # 2. Modern Responsive HTML Version
+        # 2. Modern Responsive HTML Version (100% Light & Dark Mode Proof)
         html_body = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Certificate Claim Code - {claim_code}</title>
+  <style>
+    :root {{
+      color-scheme: light dark;
+      supported-color-schemes: light dark;
+    }}
+  </style>
 </head>
-<body style="margin:0;padding:0;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1e293b;-webkit-font-smoothing:antialiased;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f8fafc;padding:32px 16px;">
+<body bgcolor="#0b0f19" style="margin:0;padding:0;background-color:#0b0f19;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#e2e8f0;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0b0f19" style="background-color:#0b0f19;padding:32px 16px;">
     <tr>
-      <td align="center">
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,0.06);overflow:hidden;border:1px solid #e2e8f0;">
+      <td align="center" bgcolor="#0b0f19">
+        <table role="presentation" width="100%" max-width="600" cellspacing="0" cellpadding="0" border="0" bgcolor="#131b2e" style="max-width:600px;background-color:#131b2e;border-radius:18px;overflow:hidden;border:1px solid #1e293b;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
           
           <!-- Header Banner -->
           <tr>
-            <td style="background:linear-gradient(135deg, #312e81 0%, #4338ca 50%, #4f46e5 100%);padding:36px 32px;text-align:center;">
-              <div style="display:inline-block;padding:6px 14px;background:rgba(255,255,255,0.18);border-radius:20px;color:#ffffff;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">
+            <td bgcolor="#1e1b4b" style="background-color:#1e1b4b;padding:36px 32px;text-align:center;border-bottom:1px solid #312e81;">
+              <div style="display:inline-block;padding:6px 14px;background-color:#312e81;border:1px solid #4338ca;border-radius:20px;color:#c7d2fe;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;">
                 UIN Syarif Hidayatullah Jakarta
               </div>
               <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.35;letter-spacing:-0.3px;">
                 Attendance Verified &amp; Certificate Issued
               </h1>
-              <p style="margin:8px 0 0 0;color:#e0e7ff;font-size:13px;">
+              <p style="margin:8px 0 0 0;color:#a5b4fc;font-size:13px;font-weight:500;">
                 {event_name}
               </p>
             </td>
@@ -126,38 +134,46 @@ You received this notification because your email ({to_email}) was submitted dur
 
           <!-- Main Content -->
           <tr>
-            <td style="padding:36px 32px;">
-              <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#1e293b;">
-                Dear <strong>{full_name}</strong>,
+            <td bgcolor="#131b2e" style="padding:36px 32px;background-color:#131b2e;">
+              <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#f8fafc;">
+                Dear <strong style="color:#ffffff;">{full_name}</strong>,
               </p>
-              <p style="margin:0 0 20px 0;font-size:14px;line-height:1.6;color:#475569;">
-                Thank you for your participation. Your attendance has been officially confirmed and cryptographically logged. Below is your unique Certificate Claim Code:
+              <p style="margin:0 0 20px 0;font-size:14px;line-height:1.6;color:#94a3b8;">
+                Thank you for your active participation. Your check-in and attendance have been officially confirmed and cryptographically logged. Below is your official Certificate Claim Code:
               </p>
 
               <!-- Attendance Summary Box -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f1f5f9;border-radius:12px;margin:0 0 24px 0;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0b0f19" style="background-color:#0b0f19;border:1px solid #1e293b;border-radius:12px;margin:0 0 24px 0;">
                 <tr>
-                  <td style="padding:16px 20px;">
-                    <div style="font-size:13px;color:#475569;margin-bottom:4px;">
-                      <strong>Role:</strong> <span style="display:inline-block;padding:2px 8px;background:#e0e7ff;color:#3730a3;border-radius:6px;font-size:11px;font-weight:700;">{role}</span>
+                  <td bgcolor="#0b0f19" style="padding:16px 20px;">
+                    <div style="font-size:13px;color:#94a3b8;margin-bottom:4px;">
+                      <strong style="color:#cbd5e1;">Role:</strong> <span style="display:inline-block;padding:2px 10px;background-color:#1e1b4b;border:1px solid #4338ca;color:#c7d2fe;border-radius:6px;font-size:11px;font-weight:700;">{role}</span>
                     </div>
                     {paper_html_snippet}
                   </td>
                 </tr>
               </table>
 
-              <!-- Big Claim Code Card -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:linear-gradient(180deg, #fbfbfe 0%, #f5f3ff 100%);border:2px dashed #6366f1;border-radius:14px;margin:24px 0;text-align:center;">
+              <!-- Big Claim Code Card (High Contrast Dark Slate + Vivid Amber Gold) -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#070a12" style="background-color:#070a12;border:2px dashed #4f46e5;border-radius:14px;margin:24px 0;text-align:center;">
                 <tr>
-                  <td style="padding:26px 20px;">
-                    <div style="font-size:11px;font-weight:700;color:#4f46e5;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;">
-                      Certificate Claim Code
+                  <td bgcolor="#070a12" style="padding:26px 20px;text-align:center;">
+                    <div style="font-size:11px;font-weight:700;color:#818cf8;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">
+                      Your Certificate Claim Code
                     </div>
-                    <div style="font-family:'Courier New',Courier,monospace;font-size:32px;font-weight:800;letter-spacing:6px;color:#1e1b4b;padding:4px 0;">
-                      {claim_code}
-                    </div>
-                    <div style="font-size:12px;color:#64748b;margin-top:8px;">
-                      Use this code to retrieve, verify, or download your official certificate.
+                    
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin:0 auto;">
+                      <tr>
+                        <td bgcolor="#1e1b4b" style="background-color:#1e1b4b;border:2px solid #4f46e5;border-radius:12px;padding:12px 28px;text-align:center;">
+                          <span style="font-family:'Courier New',Courier,monospace;font-size:34px;font-weight:900;letter-spacing:6px;color:#fbbf24 !important;display:inline-block;line-height:1;">
+                            {claim_code}
+                          </span>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <div style="font-size:12px;color:#94a3b8;margin-top:12px;">
+                      Keep this 8-character code safe to retrieve or download your certificate anytime.
                     </div>
                   </td>
                 </tr>
@@ -167,7 +183,7 @@ You received this notification because your email ({to_email}) was submitted dur
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0 24px 0;">
                 <tr>
                   <td align="center">
-                    <a href="{verify_url}" target="_blank" style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 32px;border-radius:10px;box-shadow:0 4px 14px rgba(79,70,229,0.35);letter-spacing:0.3px;">
+                    <a href="{verify_url}" target="_blank" style="display:inline-block;background-color:#4f46e5;color:#ffffff !important;text-decoration:none;font-size:15px;font-weight:700;padding:14px 34px;border-radius:10px;box-shadow:0 4px 16px rgba(79,70,229,0.5);letter-spacing:0.3px;">
                       Claim &amp; Download Certificate &rarr;
                     </a>
                   </td>
@@ -175,16 +191,20 @@ You received this notification because your email ({to_email}) was submitted dur
               </table>
 
               <!-- Step-by-Step Instructions -->
-              <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-top:28px;">
-                <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:10px;">
-                  Quick Instructions:
-                </div>
-                <ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.75;color:#475569;">
-                  <li>Click the claim button above or open <a href="{claim_portal_url}" style="color:#4f46e5;text-decoration:underline;">sertifikat.uinjakarta.id/claim</a> in your browser.</li>
-                  <li>Enter your Claim Code: <strong style="font-family:monospace;color:#1e293b;">{claim_code}</strong></li>
-                  <li>Preview your verified certificate details and click <strong>Unduh Sertifikat (PDF)</strong>.</li>
-                </ol>
-              </div>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="#0b0f19" style="background-color:#0b0f19;border:1px solid #1e293b;border-radius:12px;margin-top:28px;">
+                <tr>
+                  <td bgcolor="#0b0f19" style="padding:20px;">
+                    <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:10px;">
+                      How to Access Your Certificate:
+                    </div>
+                    <ol style="margin:0;padding-left:20px;font-size:13px;line-height:1.75;color:#94a3b8;">
+                      <li>Click the button above or visit <a href="{claim_portal_url}" style="color:#818cf8;text-decoration:underline;">sertifikat.uinjakarta.id/claim</a></li>
+                      <li>Enter your Claim Code: <strong style="font-family:monospace;color:#fbbf24;background-color:#1e1b4b;padding:2px 6px;border-radius:4px;">{claim_code}</strong></li>
+                      <li>Preview your verified certificate details and click <strong style="color:#e2e8f0;">Unduh Sertifikat (PDF)</strong>.</li>
+                    </ol>
+                  </td>
+                </tr>
+              </table>
 
               <p style="margin:24px 0 0 0;font-size:12px;line-height:1.6;color:#64748b;">
                 <em>Note: Your certificate is generated dynamically from the latest verified records and signed cryptographically to prevent counterfeiting.</em>
@@ -195,15 +215,15 @@ You received this notification because your email ({to_email}) was submitted dur
 
           <!-- Footer -->
           <tr>
-            <td style="background-color:#f8fafc;padding:24px 32px;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#64748b;line-height:1.6;">
-              <p style="margin:0 0 6px 0;font-weight:700;color:#334155;">
+            <td bgcolor="#0b0f19" style="background-color:#0b0f19;padding:24px 32px;border-top:1px solid #1e293b;text-align:center;font-size:12px;color:#64748b;line-height:1.6;">
+              <p style="margin:0 0 6px 0;font-weight:700;color:#94a3b8;">
                 Secure CertFlow &bull; UIN Syarif Hidayatullah Jakarta
               </p>
               <p style="margin:0 0 10px 0;font-size:11px;color:#64748b;">
                 Cryptographically Secured &amp; Verifiable Credential Platform
               </p>
-              <p style="margin:0;font-size:11px;color:#94a3b8;">
-                You received this email because you checked in at {event_name}. If you did not participate, please contact the event committee.
+              <p style="margin:0;font-size:11px;color:#475569;">
+                You received this notification because your email ({to_email}) was submitted during official check-in for {event_name}.
               </p>
             </td>
           </tr>
