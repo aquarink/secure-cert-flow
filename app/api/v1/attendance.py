@@ -10,7 +10,7 @@ import uuid
 import base64
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Request, status, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Query, Response, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
@@ -18,7 +18,7 @@ from app.database import get_db
 from app.models import Event, Paper, Attendance, User, Participant, Certificate
 from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceCheckInResult
 from app.api.deps import get_current_user
-from app.services import minio_service, generate_claim_code
+from app.services import minio_service, generate_claim_code, email_service
 from app.config import settings
 
 router = APIRouter(tags=["Attendance Management"])
@@ -318,6 +318,7 @@ def submit_attendance_check_in(
     event_id: uuid.UUID,
     check_in: AttendanceCreate,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """
@@ -467,6 +468,18 @@ def submit_attendance_check_in(
     )
     db.add(certificate)
     db.commit()
+
+    # 6. Asynchronously send claim code email to participant
+    if attendance.email and settings.SMTP_ENABLED:
+        background_tasks.add_task(
+            email_service.send_attendance_claim_email,
+            to_email=attendance.email,
+            full_name=attendance.full_name,
+            event_name=event.name,
+            claim_code=claim_code,
+            role=attendance.role,
+            paper_title=attendance.paper_title
+        )
 
     return {
         "success": True,
