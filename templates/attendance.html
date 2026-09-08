@@ -56,6 +56,12 @@
           <a :href="'/verify/' + claimCode" target="_blank" class="inline-block mt-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30">
             📄 View / Download Official Certificate
           </a>
+          <template x-if="form.email">
+            <p class="text-[11px] text-indigo-200/80 pt-1 flex items-center justify-center space-x-1">
+              <span>📧</span>
+              <span>Kode klaim & petunjuk unduh juga dikirimkan ke: <strong class="text-indigo-300 font-mono" x-text="form.email"></strong></span>
+            </p>
+          </template>
         </div>
       </template>
 
