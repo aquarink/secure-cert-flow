@@ -764,22 +764,22 @@
           <!-- Attendance Logs Table with working image streaming and status -->
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-gray-300">
-              <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-wider">
+              <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-wider whitespace-nowrap">
                 <tr>
-                  <th class="px-4 py-3">Foto Live</th>
-                  <th class="px-4 py-3">Nama & Kontak</th>
-                  <th class="px-4 py-3">Institusi</th>
-                  <th class="px-4 py-3">Peran / Judul Paper</th>
-                  <th class="px-4 py-3">Geotag & IP</th>
-                  <th class="px-4 py-3">Waktu Presensi</th>
-                  <th class="px-4 py-3 text-right">Sertifikat</th>
+                  <th class="px-4 py-3 w-16 text-center">Foto Live</th>
+                  <th class="px-4 py-3 min-w-[180px]">Nama & Kontak</th>
+                  <th class="px-4 py-3 min-w-[150px]">Institusi</th>
+                  <th class="px-4 py-3 min-w-[200px]">Peran / Judul Paper</th>
+                  <th class="px-4 py-3 min-w-[140px]">Geotag & IP</th>
+                  <th class="px-4 py-3 whitespace-nowrap">Waktu Presensi</th>
+                  <th class="px-4 py-3 text-center whitespace-nowrap">Sertifikat</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-800">
                 <template x-for="att in attendances" :key="att.id">
                   <tr class="hover:bg-gray-800/50 transition">
-                    <td class="px-4 py-3">
-                      <img :src="getMediaUrl(att.photo_url)" class="w-11 h-11 rounded-lg object-cover border border-gray-700 bg-gray-800 cursor-pointer shadow" @click="previewPhoto(getMediaUrl(att.photo_url))" />
+                    <td class="px-4 py-3 text-center">
+                      <img :src="getMediaUrl(att.photo_url)" class="w-11 h-11 rounded-lg object-cover border border-gray-700 bg-gray-800 cursor-pointer shadow mx-auto" @click="previewPhoto(getMediaUrl(att.photo_url))" />
                     </td>
                     <td class="px-4 py-3">
                       <div class="font-semibold text-white" x-text="att.full_name"></div>
@@ -791,23 +791,27 @@
                     <td class="px-4 py-3 text-gray-300" x-text="att.institution"></td>
                     <td class="px-4 py-3">
                       <span class="px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 text-[10px] font-bold" x-text="att.role"></span>
-                      <div class="text-[11px] text-gray-400 truncate max-w-[200px]">
+                      <div class="text-[11px] text-gray-400 truncate max-w-[220px]">
                         <span class="font-mono text-indigo-400 font-bold mr-1" x-show="att.paper_code" x-text="'[' + att.paper_code + ']'"></span>
                         <span x-text="att.paper_title || '-'"></span>
                       </div>
                     </td>
-                    <td class="px-4 py-3 font-mono text-[11px]">
+                    <td class="px-4 py-3 font-mono text-[11px] whitespace-nowrap">
                       <template x-if="att.latitude && att.longitude">
                         <a :href="'https://www.google.com/maps?q=' + att.latitude + ',' + att.longitude" target="_blank" class="text-indigo-400 hover:underline block truncate max-w-[140px]" x-text="att.latitude.toFixed(4) + ', ' + att.longitude.toFixed(4)"></a>
                       </template>
                       <span class="text-gray-500" x-text="att.ip_address || '-'"></span>
                     </td>
-                    <td class="px-4 py-3 text-gray-400 font-mono text-[11px]" x-text="new Date(att.created_at).toLocaleString('id-ID')"></td>
-                    <td class="px-4 py-3 text-right">
+                    <td class="px-4 py-3 text-gray-400 font-mono text-[11px] whitespace-nowrap" x-text="new Date(att.created_at).toLocaleString('id-ID')"></td>
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
                       <template x-if="att.claim_code">
-                        <a :href="'/verify/' + att.claim_code" target="_blank" class="px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white font-mono text-xs transition border border-indigo-500/40">
-                          Lihat (<span x-text="att.claim_code"></span>)
+                        <a :href="'/verify/' + att.claim_code" target="_blank" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white font-mono text-xs font-semibold transition border border-indigo-500/40 whitespace-nowrap shadow-sm">
+                          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                          <span>Lihat (<span x-text="att.claim_code"></span>)</span>
                         </a>
+                      </template>
+                      <template x-if="!att.claim_code">
+                        <span class="text-gray-500 text-xs italic">-</span>
                       </template>
                     </td>
                   </tr>
