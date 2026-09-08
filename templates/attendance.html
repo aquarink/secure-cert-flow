@@ -172,152 +172,198 @@
           </select>
         </div>
 
-        <!-- 4.A Dedicated Paper ID Input Section (Visible for Author) -->
-        <div x-show="form.role === 'Author'" x-cloak class="space-y-3 p-5 rounded-2xl bg-indigo-950/40 border border-indigo-700/50 shadow-inner">
+        <!-- 4.A Dedicated Paper Section for Author (Filtered Strictly by Full Name) -->
+        <div x-show="form.role === 'Author'" x-cloak class="space-y-4 p-5 rounded-2xl bg-indigo-950/40 border border-indigo-700/50 shadow-inner">
           <div class="flex items-center justify-between">
             <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider">
-              Paper ID / Kode Paper <span class="text-rose-400">*</span>
+              Pilih Paper ID / Judul Paper (Author) <span class="text-rose-400">*</span>
             </label>
-            <span class="text-[10px] text-gray-400">Sesuai Katalog Judul Paper</span>
+            <span class="text-[10px] text-gray-400">Tersaring Sesuai Nama Anda</span>
           </div>
 
-          <div class="relative">
-            <input type="text"
-                   x-model="form.paper_code"
-                   @input="onPaperCodeInput()"
-                   @change="onPaperCodeInput()"
-                   placeholder="Masukkan Paper ID Anda (contoh: 2, 3, 1570...)"
-                   class="w-full px-4 py-3 rounded-xl bg-gray-950 border text-white text-sm font-mono placeholder-gray-600 focus:ring-2 transition"
-                   :class="authorCheck.status === 'OK' ? 'border-emerald-500 focus:ring-emerald-500/20' : (authorCheck.status === 'ALREADY_CLAIMED' ? 'border-amber-500 focus:ring-amber-500/20' : (form.paper_code && form.paper_code.trim() && (authorCheck.status === 'NAME_MISMATCH' || !matchedPaper) ? 'border-rose-500 focus:ring-rose-500/20' : 'border-indigo-600 focus:ring-indigo-500/20'))">
-
-            <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-1 pointer-events-none">
-              <template x-if="authorCheckLoading">
-                <span class="text-xs text-indigo-400 animate-spin">⌛</span>
-              </template>
-              <template x-if="!authorCheckLoading && authorCheck.status === 'OK'">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">✓ Sah</span>
-              </template>
-              <template x-if="!authorCheckLoading && authorCheck.status === 'ALREADY_CLAIMED'">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">⚠️ Sudah Diklaim</span>
-              </template>
-              <template x-if="!authorCheckLoading && (authorCheck.status === 'NAME_MISMATCH' || (form.paper_code && form.paper_code.trim() && !matchedPaper))">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">✕ Ditolak</span>
-              </template>
+          <!-- 1. Notice when Full Name is empty or too short -->
+          <div x-show="!form.full_name || form.full_name.trim().length < 2" class="p-4 rounded-xl bg-indigo-950/60 border border-indigo-700/50 text-indigo-200 text-xs flex items-center space-x-3">
+            <span class="text-xl">ℹ️</span>
+            <div class="space-y-0.5">
+              <div class="font-bold text-white">Masukkan Nama Lengkap & Gelar Terlebih Dahulu</div>
+              <p class="text-indigo-300 text-[11px]">Daftar Paper ID yang terdaftar atas nama Anda di katalog akan otomatis tampil di sini setelah Anda mengisi nama lengkap di atas.</p>
             </div>
           </div>
 
-          <!-- Loading Indicator -->
-          <div x-show="authorCheckLoading" class="p-3 rounded-xl bg-gray-900 border border-indigo-700/40 text-xs text-indigo-300 flex items-center space-x-2">
+          <!-- 2. Loading Indicator -->
+          <div x-show="userPapersLoading" class="p-3.5 rounded-xl bg-gray-900 border border-indigo-700/40 text-xs text-indigo-300 flex items-center space-x-2">
             <svg class="w-4 h-4 animate-spin text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-            <span>Memverifikasi status kepenulisan di katalog...</span>
+            <span>Memeriksa paper terdaftar atas nama Anda di katalog...</span>
           </div>
 
-          <!-- Prompt: Fill name first -->
-          <div x-show="!authorCheckLoading && matchedPaper && (!form.full_name || !form.full_name.trim())" class="p-3.5 rounded-xl bg-indigo-950/60 border border-indigo-700/50 text-indigo-200 text-xs flex items-center space-x-2">
-            <span class="text-base">ℹ️</span>
-            <span>Silakan isi <strong>Nama Lengkap & Gelar</strong> di atas untuk memverifikasi apakah Anda terdaftar pada paper ini.</span>
-          </div>
-
-          <!-- 1. Matched Paper & Valid Author Details Card -->
-          <div x-show="!authorCheckLoading && authorCheck.status === 'OK'" class="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/50 space-y-2 text-xs transition shadow-lg shadow-emerald-950/40">
-            <div class="flex items-center justify-between">
-              <span class="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">✓ Penulis Terverifikasi Sah</span>
-              <span class="px-2 py-0.5 rounded bg-emerald-900/60 font-mono text-[10px] text-emerald-300 font-bold" x-text="'ID: ' + (matchedPaper ? matchedPaper.paper_code : form.paper_code)"></span>
-            </div>
-            <p class="text-white font-bold leading-snug" x-text="matchedPaper?.title"></p>
-            <div class="text-[11px] text-emerald-300">
-              <span>Penulis Terdaftar: </span><strong class="text-white" x-text="authorCheck.matched_author"></strong>
-            </div>
-            <p class="text-gray-400 text-[10px]" x-show="matchedPaper?.authors" x-text="'Daftar Seluruh Penulis: ' + matchedPaper?.authors"></p>
-          </div>
-
-          <!-- 2. ALREADY CLAIMED Warning Card -->
-          <div x-show="!authorCheckLoading && authorCheck.status === 'ALREADY_CLAIMED'" class="p-4 rounded-xl bg-amber-950/40 border border-amber-500/60 space-y-2.5 text-xs text-amber-200 transition shadow-xl">
-            <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
-              <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-              <span>Paper ID & Author Sudah Pernah Diklaim</span>
-            </div>
-            <p class="leading-relaxed font-medium" x-text="authorCheck.message"></p>
-            <div class="pt-1">
-              <a href="https://sertifikat.uinjakarta.id/claim" target="_blank" class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-extrabold text-xs transition shadow-md">
-                <span>Buka https://sertifikat.uinjakarta.id/claim</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-              </a>
-            </div>
-          </div>
-
-          <!-- 3. NAME MISMATCH Error Card -->
-          <div x-show="!authorCheckLoading && authorCheck.status === 'NAME_MISMATCH'" class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 space-y-2 text-xs text-rose-300 transition shadow-lg">
-            <div class="flex items-center space-x-2 text-rose-400 font-bold text-xs">
+          <!-- 3. Warning when no papers found for this author -->
+          <div x-show="userPapersSearched && !userPapersLoading && userPapers.length === 0 && form.full_name && form.full_name.trim().length >= 2" class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 text-xs text-rose-300 space-y-1.5 shadow-lg">
+            <div class="flex items-center space-x-2 text-rose-400 font-bold">
               <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-              <span>Nama Tidak Sesuai Daftar Penulis Paper Ini</span>
+              <span>Tidak Ditemukan Paper Atas Nama Anda</span>
             </div>
-            <p class="text-gray-300 leading-relaxed" x-text="authorCheck.message"></p>
+            <p class="text-gray-300 text-[11px] leading-relaxed">
+              Nama "<span class="text-white font-semibold" x-text="form.full_name"></span>" tidak ditemukan dalam daftar penulis paper manapun di katalog acara ini. Pastikan penulisan nama Anda sesuai dengan yang tercantum pada naskah paper.
+            </p>
           </div>
 
-          <!-- 4. NOT FOUND Error Message -->
-          <div x-show="!authorCheckLoading && form.paper_code && form.paper_code.trim() && (!matchedPaper || authorCheck.status === 'NOT_FOUND')" class="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs flex items-center space-x-2">
-            <svg class="w-4 h-4 shrink-0 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span>Paper ID <strong class="font-mono text-white" x-text="form.paper_code"></strong> tidak ditemukan dalam Katalog Judul Paper acara ini.</span>
-          </div>
+          <!-- 4. Matching Papers List (Filtered Strictly to User's Papers) -->
+          <div x-show="!userPapersLoading && userPapers.length > 0" class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-emerald-400 font-bold flex items-center space-x-1.5">
+                <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Paper Terdaftar Atas Nama Anda:</span>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 font-mono text-[10px]" x-text="userPapers.length + ' Paper'"></span>
+              </span>
+              <span class="text-[10px] text-gray-400">Klik paper untuk memilih</span>
+            </div>
 
-          <!-- Helper toggle: Search / Browse Catalog by Title -->
-          <div class="pt-1">
-            <button type="button" @click="showPaperSearchHelper = !showPaperSearchHelper; if (showPaperSearchHelper) filterAuthorCatalog();" class="text-[11px] text-indigo-400 hover:underline flex items-center space-x-1">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-              <span x-text="showPaperSearchHelper ? 'Tutup Pencarian Judul' : 'Lupa Paper ID? Cari berdasarkan Judul Paper'"></span>
-            </button>
-
-            <div x-show="showPaperSearchHelper" class="mt-2 p-3 rounded-xl bg-gray-900 border border-gray-700 space-y-2">
-              <input type="text" x-model="paperSearchQuery" @input="filterAuthorCatalog()" placeholder="Ketik kata kunci judul atau nama penulis..." class="w-full px-3 py-2 rounded-lg bg-gray-950 border border-gray-700 text-xs text-white focus:border-indigo-500">
-              <div class="max-h-44 overflow-y-auto divide-y divide-gray-800 rounded-lg bg-gray-950">
-                <template x-for="p in helperFilteredPapers" :key="p.id">
-                  <div @click="pickPaperForAuthor(p)" class="p-2.5 hover:bg-indigo-600/20 cursor-pointer text-xs transition space-y-0.5">
+            <!-- Clickable Cards for each user paper -->
+            <div class="grid grid-cols-1 gap-2.5">
+              <template x-for="p in userPapers" :key="p.id">
+                <div @click="pickPaperForAuthor(p)"
+                     class="p-3.5 rounded-2xl border transition cursor-pointer text-xs space-y-1.5"
+                     :class="form.paper_id === p.id ? 'bg-indigo-950/90 border-emerald-500 ring-2 ring-emerald-500/30 shadow-xl' : 'bg-gray-950 hover:bg-gray-900 border-gray-800 hover:border-indigo-600/60'">
+                  <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-2">
-                      <span class="px-1.5 py-0.5 rounded bg-indigo-900/60 text-indigo-300 font-mono text-[10px] font-bold" x-text="'ID: ' + p.paper_code"></span>
-                      <span class="font-semibold text-white truncate" x-text="p.title"></span>
+                      <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-700/50">PAID</span>
+                      <span class="px-2 py-0.5 rounded bg-indigo-900/80 text-indigo-200 font-mono text-[11px] font-bold border border-indigo-700/50" x-text="'ID: ' + p.paper_code"></span>
                     </div>
-                    <div class="text-[10px] text-gray-400 truncate" x-text="p.authors || '-'"></div>
+                    <template x-if="form.paper_id === p.id">
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center space-x-1">
+                        <span>✓ Terpilih</span>
+                      </span>
+                    </template>
+                    <template x-if="form.paper_id !== p.id">
+                      <span class="text-[11px] text-indigo-400 font-bold hover:underline flex items-center space-x-1">
+                        <span>Pilih</span>
+                        <span>➔</span>
+                      </span>
+                    </template>
                   </div>
-                </template>
-                <template x-if="helperFilteredPapers.length === 0">
-                  <div class="p-3 text-center text-gray-500 text-xs">Tidak ada paper yang cocok di katalog.</div>
-                </template>
+                  <p class="font-bold text-white text-sm leading-snug" x-text="p.title"></p>
+                  <p class="text-[10px] text-gray-400" x-text="'Penulis: ' + (p.authors || '-')"></p>
+                </div>
+              </template>
+            </div>
+
+            <!-- Selected Paper Verification Status -->
+            <div x-show="form.paper_id" class="pt-2 border-t border-indigo-900/50 space-y-2">
+              <!-- 1. OK Card -->
+              <div x-show="!authorCheckLoading && authorCheck.status === 'OK'" class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/50 space-y-1 text-xs text-emerald-200">
+                <span class="text-emerald-400 font-bold uppercase tracking-wider text-[10px]">✓ Penulis Terverifikasi Sah</span>
+                <div class="text-[11px]">Nama Terdaftar: <strong class="text-white" x-text="authorCheck.matched_author"></strong></div>
+              </div>
+
+              <!-- 2. Already Claimed Card -->
+              <div x-show="!authorCheckLoading && authorCheck.status === 'ALREADY_CLAIMED'" class="p-4 rounded-xl bg-amber-950/40 border border-amber-500/60 space-y-2 text-xs text-amber-200 shadow-xl">
+                <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+                  <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                  <span>Paper ID & Author Sudah Pernah Diklaim</span>
+                </div>
+                <p class="leading-relaxed font-medium" x-text="authorCheck.message"></p>
+                <div class="pt-1">
+                  <a href="https://sertifikat.uinjakarta.id/claim" target="_blank" class="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-extrabold text-xs transition shadow-md">
+                    <span>Buka https://sertifikat.uinjakarta.id/claim</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                  </a>
+                </div>
+              </div>
+
+              <!-- 3. Name Mismatch Error Card -->
+              <div x-show="!authorCheckLoading && authorCheck.status === 'NAME_MISMATCH'" class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 space-y-2 text-xs text-rose-300 transition shadow-lg">
+                <div class="flex items-center space-x-2 text-rose-400 font-bold text-xs">
+                  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  <span>Nama Tidak Sesuai Daftar Penulis Paper Ini</span>
+                </div>
+                <p class="text-gray-300 leading-relaxed" x-text="authorCheck.message"></p>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 4.B Dynamic Paper / Topic Dropdown Search Autocomplete (Visible for Presenter) -->
-        <div x-show="form.role === 'Presenter'" x-cloak class="space-y-2 p-4 rounded-2xl bg-indigo-950/40 border border-indigo-700/50">
-          <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider flex items-center justify-between">
-            <span>Pilih Judul Paper yang Dipresentasikan <span class="text-rose-400">*</span></span>
-            <span class="text-[10px] text-gray-400 font-normal">Ketik untuk mencari di katalog</span>
-          </label>
-          
-          <div class="relative">
-            <input type="text" x-model="paperSearch" @focus="showPaperDropdown = true" @input="filterPapers()" placeholder="Cari judul paper atau kode paper..." class="w-full px-4 py-2.5 rounded-xl bg-gray-950 border border-indigo-600 text-white text-sm focus:ring-2 focus:ring-indigo-500 placeholder-gray-600">
+        <!-- 4.B Dedicated Paper Section for Presenter (Filtered Strictly by Full Name) -->
+        <div x-show="form.role === 'Presenter'" x-cloak class="space-y-4 p-5 rounded-2xl bg-indigo-950/40 border border-indigo-700/50 shadow-inner">
+          <div class="flex items-center justify-between">
+            <label class="block text-xs font-bold text-indigo-300 uppercase tracking-wider">
+              Pilih Paper yang Anda Presentasikan <span class="text-rose-400">*</span>
+            </label>
+            <span class="text-[10px] text-gray-400">Tersaring Sesuai Nama Anda</span>
+          </div>
 
-            <!-- Paper Autocomplete Dropdown List -->
-            <div x-show="showPaperDropdown && filteredPapers.length > 0" @click.away="showPaperDropdown = false" class="absolute left-0 right-0 top-full mt-1 z-30 max-h-56 overflow-y-auto rounded-xl bg-gray-900 border border-gray-700 shadow-2xl divide-y divide-gray-800 text-xs">
-              <template x-for="p in filteredPapers" :key="p.id">
-                <button type="button" @click="selectPaper(p)" class="w-full text-left p-3 hover:bg-indigo-600/20 hover:text-indigo-300 transition space-y-1">
-                  <div class="flex items-center space-x-2">
-                    <span class="px-1.5 py-0.5 rounded bg-gray-800 text-indigo-400 font-mono text-[10px]" x-text="p.paper_code || 'PAPER'"></span>
-                    <span class="font-semibold text-white truncate" x-text="p.title"></span>
-                  </div>
-                  <div class="text-[11px] text-gray-400 truncate" x-text="'Authors: ' + (p.authors || '-')"></div>
-                </button>
-              </template>
+          <!-- 1. Notice when Full Name is empty or too short -->
+          <div x-show="!form.full_name || form.full_name.trim().length < 2" class="p-4 rounded-xl bg-indigo-950/60 border border-indigo-700/50 text-indigo-200 text-xs flex items-center space-x-3">
+            <span class="text-xl">ℹ️</span>
+            <div class="space-y-0.5">
+              <div class="font-bold text-white">Masukkan Nama Lengkap & Gelar Terlebih Dahulu</div>
+              <p class="text-indigo-300 text-[11px]">Judul paper yang dapat Anda presentasikan akan otomatis muncul di sini setelah Anda mengisi nama lengkap di atas.</p>
             </div>
           </div>
 
-          <template x-if="form.paper_title">
-            <div class="text-xs text-emerald-400 flex items-center space-x-1.5 pt-1 font-semibold">
-              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-              <span class="truncate" x-text="'Paper Terpilih: ' + form.paper_title"></span>
+          <!-- 2. Loading Indicator -->
+          <div x-show="userPapersLoading" class="p-3.5 rounded-xl bg-gray-900 border border-indigo-700/40 text-xs text-indigo-300 flex items-center space-x-2">
+            <svg class="w-4 h-4 animate-spin text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+            <span>Memeriksa paper terdaftar atas nama Anda di katalog...</span>
+          </div>
+
+          <!-- 3. Warning when no papers found for this presenter -->
+          <div x-show="userPapersSearched && !userPapersLoading && userPapers.length === 0 && form.full_name && form.full_name.trim().length >= 2" class="p-4 rounded-xl bg-rose-950/40 border border-rose-500/50 text-xs text-rose-300 space-y-1.5 shadow-lg">
+            <div class="flex items-center space-x-2 text-rose-400 font-bold">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              <span>Tidak Ditemukan Paper Atas Nama Anda</span>
             </div>
-          </template>
+            <p class="text-gray-300 text-[11px] leading-relaxed">
+              Nama "<span class="text-white font-semibold" x-text="form.full_name"></span>" tidak terdaftar sebagai penulis maupun presenter di katalog paper acara ini.
+            </p>
+          </div>
+
+          <!-- 4. Matching Papers List for Presenter -->
+          <div x-show="!userPapersLoading && userPapers.length > 0" class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-emerald-400 font-bold flex items-center space-x-1.5">
+                <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>Pilih Paper yang Dipresentasikan:</span>
+                <span class="px-2 py-0.5 rounded-full bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 font-mono text-[10px]" x-text="userPapers.length + ' Paper'"></span>
+              </span>
+              <span class="text-[10px] text-gray-400">Klik paper yang Anda bawakan</span>
+            </div>
+
+            <!-- Clickable Cards for each presenter paper -->
+            <div class="grid grid-cols-1 gap-2.5">
+              <template x-for="p in userPapers" :key="p.id">
+                <div @click="selectPaper(p)"
+                     class="p-3.5 rounded-2xl border transition cursor-pointer text-xs space-y-1.5"
+                     :class="form.paper_id === p.id ? 'bg-indigo-950/90 border-emerald-500 ring-2 ring-emerald-500/30 shadow-xl' : 'bg-gray-950 hover:bg-gray-900 border-gray-800 hover:border-indigo-600/60'">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                      <span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-mono text-[10px] font-bold border border-emerald-700/50">PAID</span>
+                      <span class="px-2 py-0.5 rounded bg-indigo-900/80 text-indigo-200 font-mono text-[11px] font-bold border border-indigo-700/50" x-text="'ID: ' + p.paper_code"></span>
+                    </div>
+                    <template x-if="form.paper_id === p.id">
+                      <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center space-x-1">
+                        <span>✓ Terpilih Sebagai Presenter</span>
+                      </span>
+                    </template>
+                    <template x-if="form.paper_id !== p.id">
+                      <span class="text-[11px] text-indigo-400 font-bold hover:underline flex items-center space-x-1">
+                        <span>Pilih Paper Ini</span>
+                        <span>➔</span>
+                      </span>
+                    </template>
+                  </div>
+                  <p class="font-bold text-white text-sm leading-snug" x-text="p.title"></p>
+                  <p class="text-[10px] text-gray-400" x-text="'Penulis: ' + (p.authors || '-')"></p>
+                </div>
+              </template>
+            </div>
+
+            <template x-if="form.paper_title">
+              <div class="text-xs text-emerald-400 flex items-center space-x-1.5 pt-1 font-semibold">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                <span class="truncate" x-text="'Paper Terpilih: [' + (form.paper_code || '-') + '] ' + form.paper_title"></span>
+              </div>
+            </template>
+          </div>
         </div>
 
         <!-- 5. Live Photo Capture (Camera HTML5) -->
@@ -366,8 +412,8 @@
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" :disabled="submitting || !cameraReady || !locationReady || !photoCaptured || (form.role === 'Author' && (authorCheck.status === 'ALREADY_CLAIMED' || authorCheck.status === 'NAME_MISMATCH' || authorCheck.status === 'NAME_REQUIRED' || !matchedPaper))" class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm transition shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2">
-          <span x-text="submitting ? 'Memproses Presensi...' : (form.role === 'Author' && authorCheck.status === 'ALREADY_CLAIMED' ? 'Presensi Sudah Pernah Diklaim' : (form.role === 'Author' && authorCheck.status === 'NAME_MISMATCH' ? 'Nama Tidak Sesuai Daftar Penulis' : 'Kirim Presensi Kehadiran Resmi'))"></span>
+        <button type="submit" :disabled="submitting || !cameraReady || !locationReady || !photoCaptured || (form.role === 'Author' && (authorCheck.status === 'ALREADY_CLAIMED' || authorCheck.status === 'NAME_MISMATCH' || authorCheck.status === 'NAME_REQUIRED' || !form.paper_id)) || (form.role === 'Presenter' && (!form.paper_id || !form.paper_title || userPapers.length === 0))" class="w-full py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-extrabold text-sm transition shadow-xl shadow-indigo-600/30 flex items-center justify-center space-x-2">
+          <span x-text="submitting ? 'Memproses Presensi...' : (form.role === 'Author' && authorCheck.status === 'ALREADY_CLAIMED' ? 'Presensi Sudah Pernah Diklaim' : (form.role === 'Author' && authorCheck.status === 'NAME_MISMATCH' ? 'Nama Tidak Sesuai Daftar Penulis' : ((form.role === 'Author' || form.role === 'Presenter') && userPapers.length === 0 && form.full_name ? 'Tidak Ada Paper Terdaftar Atas Nama Anda' : 'Kirim Presensi Kehadiran Resmi')))"></span>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
         </button>
 
@@ -404,6 +450,12 @@
         showPaperSearchHelper: false,
         paperSearchQuery: '',
         helperFilteredPapers: [],
+
+        // User papers matching full_name
+        userPapers: [],
+        userPapersLoading: false,
+        userPapersSearched: false,
+        nameDebounceTimer: null,
 
         // Author validation state
         authorCheck: { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false },
@@ -502,6 +554,128 @@
           }
         },
 
+        cleanNameTokens(name) {
+          if (!name) return [];
+          let s = name.toLowerCase();
+          const titlesPattern = /\b(prof|dr|dra|drs|ir|apt|phd|ph\.d|msc|m\.sc|mkom|m\.kom|skom|s\.kom|mt|m\.t|st|s\.t|mcs|m\.cs|msi|m\.si|ssi|s\.si|mpd|m\.pd|spd|s\.pd|meng|m\.eng|beng|b\.eng|bsc|b\.sc|ba|b\.a|ma|m\.a|llm|ll\.m|sh|s\.h|mh|m\.h|se|s\.e|mm|m\.m|akt|ak|h|hj|kh|mba|m\.ba|cpa|cma|cfa|sfarm|s\.farm|mfarm|m\.farm|spsi|s\.psi|mpsi|m\.psi|sp|s\.p|mp|m\.p|spt|s\.pt|mpt|m\.pt|ssn|s\.sn|msn|m\.sn|ssos|s\.sos|msos|m\.sos|mkn|m\.kn)\b/gi;
+          s = s.replace(titlesPattern, ' ');
+          s = s.replace(/[^a-z\s]/g, ' ');
+          return s.split(/\s+/).filter(w => w.length >= 2);
+        },
+
+        parsePaperAuthors(authorsStr) {
+          if (!authorsStr) return [];
+          let s = authorsStr.replace(/\s+(and|&)\s+/gi, ',');
+          let rawParts = s.split(/[,;\n\r]+/).map(p => p.trim()).filter(Boolean);
+          let combined = [];
+          for (let part of rawParts) {
+            if (combined.length > 0 && this.cleanNameTokens(part).length === 0) {
+              combined[combined.length - 1] += ', ' + part;
+            } else {
+              combined.push(part);
+            }
+          }
+          return combined;
+        },
+
+        matchAuthorClient(inputName, authorsStr, presenterName) {
+          const inputTokens = new Set(this.cleanNameTokens(inputName));
+          if (inputTokens.size === 0) return false;
+
+          const authorsList = this.parsePaperAuthors(authorsStr);
+          if (presenterName) {
+            authorsList.push(presenterName);
+          }
+
+          for (let author of authorsList) {
+            const authorTokens = new Set(this.cleanNameTokens(author));
+            if (authorTokens.size === 0) continue;
+
+            let isSubset1 = true;
+            for (let t of inputTokens) { if (!authorTokens.has(t)) { isSubset1 = false; break; } }
+            let isSubset2 = true;
+            for (let t of authorTokens) { if (!inputTokens.has(t)) { isSubset2 = false; break; } }
+            if (isSubset1 && isSubset2) return true;
+
+            let commonCount = 0;
+            for (let t of inputTokens) {
+              if (authorTokens.has(t)) commonCount++;
+            }
+            if (commonCount >= 2) return true;
+            if (inputTokens.size === 1 && commonCount === 1) {
+              const single = Array.from(inputTokens)[0];
+              if (single.length >= 4) return true;
+            }
+          }
+          return false;
+        },
+
+        async fetchUserPapers() {
+          if (this.form.role !== 'Author' && this.form.role !== 'Presenter') return;
+          const name = (this.form.full_name || '').trim();
+          if (!name || name.length < 2) {
+            this.userPapers = [];
+            this.userPapersSearched = false;
+            this.matchedPaper = null;
+            this.form.paper_id = null;
+            this.form.paper_code = '';
+            this.form.paper_title = '';
+            this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
+            return;
+          }
+
+          // 1. Immediate responsive client match
+          const allPapers = this.eventInfo.papers || [];
+          this.userPapers = allPapers.filter(p => this.matchAuthorClient(name, p.authors, p.presenter_name));
+          this.userPapersSearched = true;
+
+          // 2. Fetch authoritative match from server
+          this.userPapersLoading = true;
+          try {
+            const res = await fetch(`/api/v1/events/${this.eventId}/attendance/my-papers?full_name=${encodeURIComponent(name)}`);
+            if (res.ok) {
+              const data = await res.json();
+              this.userPapers = data.papers || [];
+              this.userPapersSearched = true;
+            }
+          } catch (e) {
+            console.error('fetchUserPapers error:', e);
+          } finally {
+            this.userPapersLoading = false;
+          }
+
+          // 3. Auto-select if user has exactly 1 paper
+          if (this.userPapers.length === 1) {
+            const single = this.userPapers[0];
+            if (this.form.role === 'Author') {
+              this.pickPaperForAuthor(single);
+            } else if (this.form.role === 'Presenter') {
+              this.selectPaper(single);
+            }
+          } else {
+            // If currently selected paper does not belong to new userPapers, reset
+            if (this.form.paper_id) {
+              const stillExists = this.userPapers.find(p => p.id === this.form.paper_id);
+              if (!stillExists) {
+                this.form.paper_id = null;
+                this.form.paper_code = '';
+                this.form.paper_title = '';
+                this.matchedPaper = null;
+                this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
+              }
+            }
+          }
+        },
+
+        onFullNameInput() {
+          if (this.form.role === 'Author' || this.form.role === 'Presenter') {
+            if (this.nameDebounceTimer) clearTimeout(this.nameDebounceTimer);
+            this.nameDebounceTimer = setTimeout(() => {
+              this.fetchUserPapers();
+            }, 250);
+          }
+        },
+
         onRoleChange() {
           if (this.form.role === 'Participant') {
             this.form.paper_id = null;
@@ -510,10 +684,10 @@
             this.matchedPaper = null;
             this.paperSearch = '';
             this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
-          } else if (this.form.role === 'Author') {
-            this.onPaperCodeInput();
-          } else if (this.form.role === 'Presenter') {
-            this.filterPapers();
+            this.userPapers = [];
+            this.userPapersSearched = false;
+          } else if (this.form.role === 'Author' || this.form.role === 'Presenter') {
+            this.fetchUserPapers();
           }
         },
 
@@ -556,86 +730,18 @@
           }
         },
 
-        onFullNameInput() {
-          if (this.form.role === 'Author' && this.form.paper_code) {
-            this.checkAuthorValidity();
-          }
-        },
-
-        onPaperCodeInput() {
-          if (!this.form.paper_code || !this.form.paper_code.toString().trim()) {
-            this.matchedPaper = null;
-            this.form.paper_id = null;
-            this.form.paper_title = '';
-            this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
-            return;
-          }
-          const code = this.form.paper_code.toString().trim().toLowerCase();
-          const found = (this.eventInfo.papers || []).find(p => 
-            p.paper_code && p.paper_code.toString().trim().toLowerCase() === code
-          );
-          if (found) {
-            this.matchedPaper = found;
-            this.form.paper_id = found.id;
-            this.form.paper_title = found.title;
-            this.checkAuthorValidity();
-          } else {
-            this.matchedPaper = null;
-            this.form.paper_id = null;
-            this.form.paper_title = '';
-            this.authorCheck = {
-              status: 'NOT_FOUND',
-              message: `Paper ID "${this.form.paper_code}" tidak ditemukan dalam Katalog Judul Paper acara ini.`,
-              matched_author: '',
-              is_claimed: false,
-              is_valid: false
-            };
-          }
-        },
-
-        filterAuthorCatalog() {
-          const q = (this.paperSearchQuery || '').toLowerCase().trim();
-          if (!q) {
-            this.helperFilteredPapers = this.eventInfo.papers || [];
-          } else {
-            this.helperFilteredPapers = (this.eventInfo.papers || []).filter(p =>
-              (p.title && p.title.toLowerCase().includes(q)) ||
-              (p.paper_code && p.paper_code.toString().toLowerCase().includes(q)) ||
-              (p.authors && p.authors.toLowerCase().includes(q))
-            );
-          }
-        },
-
         pickPaperForAuthor(p) {
           this.form.paper_code = p.paper_code || '';
           this.matchedPaper = p;
           this.form.paper_id = p.id;
           this.form.paper_title = p.title;
-          this.showPaperSearchHelper = false;
           this.checkAuthorValidity();
-        },
-
-        filterPapers() {
-          const q = this.paperSearch.toLowerCase().trim();
-          this.form.paper_title = this.paperSearch;
-          if (!q) {
-            this.filteredPapers = this.eventInfo.papers || [];
-          } else {
-            this.filteredPapers = (this.eventInfo.papers || []).filter(p => 
-              (p.title && p.title.toLowerCase().includes(q)) ||
-              (p.paper_code && p.paper_code.toString().toLowerCase().includes(q)) ||
-              (p.authors && p.authors.toLowerCase().includes(q))
-            );
-          }
-          this.showPaperDropdown = true;
         },
 
         selectPaper(p) {
           this.form.paper_id = p.id;
           this.form.paper_code = p.paper_code || '';
           this.form.paper_title = p.title;
-          this.paperSearch = `${p.paper_code ? '[' + p.paper_code + '] ' : ''}${p.title}`;
-          this.showPaperDropdown = false;
         },
 
         async submitForm() {
@@ -644,12 +750,16 @@
             return;
           }
           if (this.form.role === 'Author') {
-            if (!this.form.paper_code || !this.form.paper_code.toString().trim()) {
-              alert('Bagi peran Author / Co-Author, wajib memasukkan Paper ID / Kode Paper yang terdaftar.');
+            if (!this.form.full_name || !this.form.full_name.trim()) {
+              alert('Silakan isi Nama Lengkap & Gelar Anda terlebih dahulu.');
               return;
             }
-            if (!this.matchedPaper || !this.form.paper_id) {
-              alert('Paper ID tidak ditemukan dalam Katalog Judul Paper acara ini. Pastikan Paper ID sudah benar dan terdaftar.');
+            if (this.userPapers.length === 0) {
+              alert(`Nama "${this.form.full_name}" tidak terdaftar pada paper manapun di katalog acara ini.`);
+              return;
+            }
+            if (!this.form.paper_id || !this.form.paper_code) {
+              alert('Silakan pilih salah satu paper terdaftar milik Anda.');
               return;
             }
             // Double check validation before submitting
@@ -671,9 +781,19 @@
               return;
             }
           }
-          if (this.form.role === 'Presenter' && !this.form.paper_title) {
-            alert('Silakan pilih judul paper yang Anda presentasikan.');
-            return;
+          if (this.form.role === 'Presenter') {
+            if (!this.form.full_name || !this.form.full_name.trim()) {
+              alert('Silakan isi Nama Lengkap & Gelar Anda terlebih dahulu.');
+              return;
+            }
+            if (this.userPapers.length === 0) {
+              alert(`Nama "${this.form.full_name}" tidak terdaftar sebagai presenter maupun penulis di katalog acara ini.`);
+              return;
+            }
+            if (!this.form.paper_id || !this.form.paper_title) {
+              alert('Silakan pilih judul paper yang Anda presentasikan.');
+              return;
+            }
           }
           this.submitting = true;
 
