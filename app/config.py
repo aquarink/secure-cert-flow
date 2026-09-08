@@ -56,6 +56,17 @@ class Settings(BaseSettings):
     # CI/CD Webhook
     WEBHOOK_SECRET: str = "change_me_webhook_secret"
 
+    # SMTP / Email Settings
+    SMTP_ENABLED: bool = True
+    SMTP_HOST: str = "mail.uinjakarta.id"
+    SMTP_PORT: int = 465
+    SMTP_USER: str = "sertifikat@uinjakarta.id"
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_NAME: str = "Secure CertFlow"
+    SMTP_FROM_EMAIL: str = "sertifikat@uinjakarta.id"
+    SMTP_USE_SSL: bool = True
+    SMTP_TIMEOUT: int = 30
+
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
 
