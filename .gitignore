@@ -52,6 +52,7 @@ uploads/
 storage/
 temp/
 *.log
+*.pdf
 
 # IDE & OS
 .DS_Store
