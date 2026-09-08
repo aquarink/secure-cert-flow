@@ -14,6 +14,7 @@ from app.services.minio_service import minio_service, MinIOService
 from app.services.kafka_service import kafka_service, KafkaService
 from app.services.cert_generator import cert_generator, CertificateGenerator
 from app.services.excel_service import excel_service, ExcelService
+from app.services.email_service import email_service, EmailService
 
 __all__ = [
     "hash_password",
@@ -30,4 +31,6 @@ __all__ = [
     "CertificateGenerator",
     "excel_service",
     "ExcelService",
+    "email_service",
+    "EmailService",
 ]
