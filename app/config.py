@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     SMTP_USE_SSL: bool = True
     SMTP_TIMEOUT: int = 30
 
+    # Registration Feature Flag (Controlled by env REGISTER=true/false)
+    REGISTER: bool = True
+
     # CORS
     CORS_ORIGINS: List[str] = ["*"]
 
