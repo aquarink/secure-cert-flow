@@ -36,11 +36,15 @@ class EmailService:
         event_name: str,
         claim_code: str,
         role: str,
-        paper_title: Optional[str] = None
+        paper_title: Optional[str] = None,
+        header_title: Optional[str] = None,
+        intro_text: Optional[str] = None,
+        notice_reason: Optional[str] = None
     ) -> MIMEMultipart:
         """
         Builds a MIME multipart/alternative email with clean Plain Text and modern responsive HTML.
         Strictly conforms to anti-spam best practices (headers, MIME ratio, unsubscription notice).
+        Dynamically adapts text for attendees, presenters, authors, and special roles (committee, reviewer, etc.).
         """
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"Your Certificate Claim Code for {event_name} - Secure CertFlow"
@@ -54,6 +58,20 @@ class EmailService:
         verify_url = f"{self.base_url}/verify/{claim_code}"
         claim_portal_url = f"{self.base_url}/claim"
 
+        is_attendee_role = str(role).strip().lower() in ["participant", "peserta", "attendee", "presenter", "author", "pemakalah", "penulis"]
+        effective_header = header_title or ("Attendance Verified & Certificate Issued" if is_attendee_role else f"Certificate Issued - {role}")
+        effective_intro = intro_text or (
+            "Thank you for your active participation. Your check-in and attendance have been officially confirmed and cryptographically logged. Below is your official Certificate Claim Code:"
+            if is_attendee_role else
+            f"Thank you for your valuable contribution and dedication as <strong style=\"color:#ffffff;\">{role}</strong> for {event_name}. Below is your official Certificate Claim Code:"
+        )
+        effective_plain_intro = (
+            f"Thank you for your verified attendance at {event_name} through the Secure CertFlow portal."
+            if is_attendee_role else
+            f"Thank you for your valuable contribution and service as {role} at {event_name} through the Secure CertFlow portal."
+        )
+        effective_notice = notice_reason or f"You received this notification because your email ({to_email}) was registered for {event_name}."
+
         paper_text_snippet = f"\nPaper: {paper_title}" if paper_title else ""
         paper_html_snippet = f"""
         <div style="margin: 6px 0; font-size: 13px; color: #94a3b8;">
@@ -64,12 +82,12 @@ class EmailService:
         # 1. Plain Text Version (Vital for SpamAssassin score)
         text_body = f"""Dear {full_name},
 
-Thank you for your verified attendance at {event_name} through the Secure CertFlow portal.
+{effective_plain_intro}
 
-Your attendance details:
+Your details:
 - Name: {full_name}
 - Role: {role}{paper_text_snippet}
-- Verification Status: Confirmed
+- Verification Status: Confirmed & Issued
 
 Your Certificate Claim Code:
 --------------------------------------------------
@@ -92,7 +110,7 @@ UIN Syarif Hidayatullah Jakarta
 {self.base_url}
 
 ---
-You received this notification because your email ({to_email}) was submitted during check-in for {event_name}.
+{effective_notice}
 """
 
         # 2. Modern Responsive HTML Version (100% Light & Dark Mode Proof)
@@ -124,7 +142,7 @@ You received this notification because your email ({to_email}) was submitted dur
                 UIN Syarif Hidayatullah Jakarta
               </div>
               <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.35;letter-spacing:-0.3px;">
-                Attendance Verified &amp; Certificate Issued
+                {effective_header}
               </h1>
               <p style="margin:8px 0 0 0;color:#a5b4fc;font-size:13px;font-weight:500;">
                 {event_name}
@@ -139,7 +157,7 @@ You received this notification because your email ({to_email}) was submitted dur
                 Dear <strong style="color:#ffffff;">{full_name}</strong>,
               </p>
               <p style="margin:0 0 20px 0;font-size:14px;line-height:1.6;color:#94a3b8;">
-                Thank you for your active participation. Your check-in and attendance have been officially confirmed and cryptographically logged. Below is your official Certificate Claim Code:
+                {effective_intro}
               </p>
 
               <!-- Attendance Summary Box -->
@@ -223,7 +241,7 @@ You received this notification because your email ({to_email}) was submitted dur
                 Cryptographically Secured &amp; Verifiable Credential Platform
               </p>
               <p style="margin:0;font-size:11px;color:#475569;">
-                You received this notification because your email ({to_email}) was submitted during official check-in for {event_name}.
+                {effective_notice}
               </p>
             </td>
           </tr>
@@ -246,7 +264,10 @@ You received this notification because your email ({to_email}) was submitted dur
         event_name: str,
         claim_code: str,
         role: str,
-        paper_title: Optional[str] = None
+        paper_title: Optional[str] = None,
+        header_title: Optional[str] = None,
+        intro_text: Optional[str] = None,
+        notice_reason: Optional[str] = None
     ) -> bool:
         """
         Sends the claim code email synchronously or in a FastAPI background task.
@@ -267,7 +288,10 @@ You received this notification because your email ({to_email}) was submitted dur
                 event_name=event_name.strip(),
                 claim_code=claim_code.strip(),
                 role=role.strip(),
-                paper_title=paper_title.strip() if paper_title else None
+                paper_title=paper_title.strip() if paper_title else None,
+                header_title=header_title,
+                intro_text=intro_text,
+                notice_reason=notice_reason
             )
 
             logger.info(f"Connecting to SMTP {self.host}:{self.port} (SSL={self.use_ssl})...")
@@ -300,6 +324,28 @@ You received this notification because your email ({to_email}) was submitted dur
         except Exception as e:
             logger.error(f"Failed to send claim code email to {to_email}: {type(e).__name__} - {e}")
             return False
+
+    def send_special_role_claim_email(
+        self,
+        to_email: str,
+        full_name: str,
+        event_name: str,
+        claim_code: str,
+        role: str
+    ) -> bool:
+        """
+        Convenience wrapper specifically for special roles (Committee, Reviewer, Cleaning Service, etc.)
+        """
+        return self.send_attendance_claim_email(
+            to_email=to_email,
+            full_name=full_name,
+            event_name=event_name,
+            claim_code=claim_code,
+            role=role,
+            header_title=f"Official Certificate - {role}",
+            intro_text=f"Thank you for your valuable contribution and dedication as <strong style=\"color:#ffffff;\">{role}</strong> for {event_name}. Below is your official Certificate Claim Code:",
+            notice_reason=f"You received this notification because you were issued an official certificate as {role} for {event_name}."
+        )
 
 
 email_service = EmailService()
