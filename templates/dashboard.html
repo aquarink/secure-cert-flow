@@ -933,39 +933,52 @@
 
           <!-- Configuration Fields Row -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-            <!-- 1. Role Selection -->
+            <!-- 1. Role Selection (Dynamically Sourced from Tab 2 Visual Templates) -->
             <div>
-              <label class="block font-semibold text-gray-300 uppercase mb-1.5">1. Peran Penerima (Role) <span class="text-rose-400">*</span></label>
-              <select x-model="specialRolePreset" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 font-medium">
-                <option value="Committee">Committee (Panitia Acara)</option>
-                <option value="Reviewer">Reviewer (Mitra Bestari / Reviewer Paper)</option>
-                <option value="Session Chair">Session Chair</option>
-                <option value="Keynote Speaker">Keynote Speaker</option>
-                <option value="Invited Speaker">Invited Speaker</option>
-                <option value="Moderator">Moderator</option>
-                <option value="Cleaning Service">Cleaning Service (Layanan Kebersihan)</option>
-                <option value="Security">Security (Keamanan & Ketertiban)</option>
-                <option value="Volunteer">Volunteer / LO (Liaison Officer)</option>
-                <option value="Trainer">Trainer / Instruktur</option>
-                <option value="CUSTOM">+ Ketik Nama Peran Kustom Lainnya...</option>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="block font-semibold text-gray-300 uppercase">1. Peran Penerima (Role) <span class="text-rose-400">*</span></label>
+                <button type="button" @click="openAddTemplateModal()" class="text-[10px] text-indigo-400 hover:text-indigo-300 underline font-semibold flex items-center space-x-1" title="Tambah desain template baru untuk acara ini">
+                  <span>+ Tambah Template Baru</span>
+                </button>
+              </div>
+
+              <select x-model="selectedRoleTemplateId" @change="onRoleTemplateChange()" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 font-medium">
+                <option value="">-- Pilih Peran dari Template Acara --</option>
+                <template x-for="tpl in eventTemplates" :key="tpl.id">
+                  <option :value="tpl.id" x-text="formatTemplateRoleOption(tpl)"></option>
+                </template>
+                <option value="CUSTOM">+ Ketik Peran Kustom Lainnya...</option>
               </select>
 
-              <!-- Custom Role Text Input -->
-              <div x-show="specialRolePreset === 'CUSTOM'" class="mt-2">
-                <input type="text" x-model="specialRoleCustom" placeholder="Contoh: Perlengkapan & Logistik, Master of Ceremony, dll..." class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-indigo-500/60 text-white text-xs focus:ring-1 focus:ring-indigo-500">
+              <!-- Nama Peran yang Dicetak (Auto-filled from template or user typed) -->
+              <div class="mt-2.5" x-show="selectedRoleTemplateId">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[10px] text-gray-400 uppercase font-bold">Nama Peran yang Dicetak:</span>
+                  <span class="text-[9px] text-indigo-300 font-mono font-bold" x-text="specialRoleCustom ? '« ' + specialRoleCustom + ' »' : ''"></span>
+                </div>
+                <input type="text" x-model="specialRoleCustom" placeholder="Nama peran (cth: Committee, Reviewer, Cleaning Service)..." class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-indigo-500/60 text-white text-xs focus:ring-1 focus:ring-indigo-500 font-semibold">
+                <p class="text-[10px] text-gray-400 mt-1">Nama ini yang akan tercetak pada parameter <code>{{peran}}</code> di sertifikat penerima.</p>
               </div>
             </div>
 
-            <!-- 2. Template Selection -->
+            <!-- 2. Template Selection (Synchronized) -->
             <div>
-              <label class="block font-semibold text-gray-300 uppercase mb-1.5">2. Hubungkan Desain Template Sertifikat</label>
+              <label class="block font-semibold text-gray-300 uppercase mb-1.5">2. Desain Template Sertifikat Terhubung</label>
               <select x-model="specialRoleTemplateId" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 font-medium">
-                <option value="">Otomatis (Sesuai Role Target Template / Default)</option>
+                <option value="">Otomatis (Sesuai Pilihan Peran di Kiri)</option>
                 <template x-for="tpl in eventTemplates" :key="tpl.id">
-                  <option :value="tpl.id" x-text="tpl.name + ' (Target: ' + (tpl.role_target || 'ALL') + (tpl.is_default ? ' ⭐' : '') + ')'"></option>
+                  <option :value="tpl.id" x-text="tpl.name + ' (Target: ' + (tpl.role_target || 'ALL') + (tpl.is_default ? ' ⭐ DEFAULT' : '') + ')'"></option>
                 </template>
               </select>
-              <p class="text-[10px] text-gray-400 mt-1">Pilih desain template khusus jika ada layout sertifikat tersendiri untuk peran ini.</p>
+
+              <div class="mt-2.5 p-2.5 rounded-xl bg-gray-950 border border-gray-800 text-[11px] text-gray-400">
+                <div class="flex items-center space-x-1.5">
+                  <span class="text-xs">🎨</span>
+                  <span class="text-gray-300 font-semibold">Template Terkait:</span>
+                  <span class="text-indigo-300 font-bold" x-text="getConnectedTemplateName()"></span>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-0.5">Sertifikat akan di-render menggunakan tata letak background visual ini.</p>
+              </div>
             </div>
 
             <!-- 3. Notification & Email Options -->
@@ -1835,7 +1848,7 @@
         specialRolesLoading: false,
         specialRolesSearch: '',
         specialRolesFilterRole: '',
-        specialRolePreset: 'Committee',
+        selectedRoleTemplateId: '',
         specialRoleCustom: '',
         specialRoleTemplateId: '',
         specialRoleSendEmail: true,
@@ -2840,11 +2853,65 @@
         // ===================================================================
         // Special Roles (Panitia, Reviewer, Cleaning Service, etc.) Methods
         // ===================================================================
-        getEffectiveSpecialRole() {
-          if (this.specialRolePreset === 'CUSTOM') {
-            return (this.specialRoleCustom || '').trim() || 'Committee';
+        formatTemplateRoleOption(tpl) {
+          if (!tpl) return '';
+          const n = (tpl.name || '').trim();
+          const r = (tpl.role_target || '').trim();
+          const def = tpl.is_default ? ' [DEFAULT]' : '';
+          if (n.toLowerCase() === 'reviewer') return `Reviewer${def}`;
+          if (r && r !== 'ALL' && r.toLowerCase() !== n.toLowerCase()) {
+            return `${n} (${r})${def}`;
           }
-          return this.specialRolePreset;
+          return `${n}${def}`;
+        },
+
+        getRoleNameFromTemplate(tpl) {
+          if (!tpl) return '';
+          const n = (tpl.name || '').trim();
+          const r = (tpl.role_target || '').trim();
+          if (n.toLowerCase() === 'reviewer') return 'Reviewer';
+          if (n.toLowerCase() === 'penulis') return 'Author';
+          if (r && r !== 'ALL') return r;
+          return n;
+        },
+
+        onRoleTemplateChange() {
+          if (!this.selectedRoleTemplateId) {
+            this.specialRoleTemplateId = '';
+            this.specialRoleCustom = '';
+            return;
+          }
+          if (this.selectedRoleTemplateId === 'CUSTOM') {
+            this.specialRoleTemplateId = '';
+            this.specialRoleCustom = '';
+            return;
+          }
+          const tpl = this.eventTemplates.find(t => t.id === this.selectedRoleTemplateId);
+          if (tpl) {
+            this.specialRoleTemplateId = tpl.id;
+            this.specialRoleCustom = this.getRoleNameFromTemplate(tpl);
+          }
+        },
+
+        getConnectedTemplateName() {
+          const targetId = this.specialRoleTemplateId || (this.selectedRoleTemplateId !== 'CUSTOM' ? this.selectedRoleTemplateId : '');
+          if (targetId) {
+            const tpl = this.eventTemplates.find(t => t.id === targetId);
+            if (tpl) return tpl.name + (tpl.is_default ? ' [DEFAULT]' : '');
+          }
+          const def = this.eventTemplates.find(t => t.is_default) || this.eventTemplates[0];
+          return def ? (def.name + ' [DEFAULT ACARA]') : 'Otomatis Sesuai Template Terpilih';
+        },
+
+        getEffectiveSpecialRole() {
+          if (this.specialRoleCustom && this.specialRoleCustom.trim()) {
+            return this.specialRoleCustom.trim();
+          }
+          if (this.selectedRoleTemplateId && this.selectedRoleTemplateId !== 'CUSTOM') {
+            const tpl = this.eventTemplates.find(t => t.id === this.selectedRoleTemplateId);
+            if (tpl) return this.getRoleNameFromTemplate(tpl);
+          }
+          return '';
         },
 
         getRoleBadgeClass(role) {
@@ -2943,6 +3010,7 @@
             this.specialRoleSubmitting = true;
             try {
               const token = localStorage.getItem('auth_token');
+              const finalTemplateId = this.specialRoleTemplateId || (this.selectedRoleTemplateId && this.selectedRoleTemplateId !== 'CUSTOM' ? this.selectedRoleTemplateId : null) || null;
               const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles/bulk`, {
                 method: 'POST',
                 headers: {
@@ -2951,7 +3019,7 @@
                 },
                 body: JSON.stringify({
                   role: role,
-                  template_id: this.specialRoleTemplateId || null,
+                  template_id: finalTemplateId,
                   send_email: this.specialRoleSendEmail,
                   recipients: recipients
                 })
@@ -2983,10 +3051,11 @@
             this.specialRoleSubmitting = true;
             try {
               const token = localStorage.getItem('auth_token');
+              const finalTemplateId = this.specialRoleTemplateId || (this.selectedRoleTemplateId && this.selectedRoleTemplateId !== 'CUSTOM' ? this.selectedRoleTemplateId : null) || null;
               const formData = new FormData();
               formData.append('file', file);
               formData.append('role', role);
-              if (this.specialRoleTemplateId) formData.append('template_id', this.specialRoleTemplateId);
+              if (finalTemplateId) formData.append('template_id', finalTemplateId);
               formData.append('send_email', this.specialRoleSendEmail ? 'true' : 'false');
 
               const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles/upload`, {
