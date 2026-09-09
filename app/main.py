@@ -6,10 +6,10 @@ Main Application Entry Point (FastAPI)
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse, FileResponse, Response
+from fastapi.responses import HTMLResponse, FileResponse, Response, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app.config import settings
@@ -158,12 +158,18 @@ def index_page(request: Request):
 @app.get("/login", response_class=HTMLResponse, tags=["Web UI"])
 def login_page(request: Request):
     """Sign-in page styled with TailAdmin"""
-    return templates.TemplateResponse(request=request, name="signin.html", context={"app_name": settings.APP_NAME})
+    return templates.TemplateResponse(
+        request=request,
+        name="signin.html",
+        context={"app_name": settings.APP_NAME, "allow_registration": settings.REGISTER}
+    )
 
 
 @app.get("/register", response_class=HTMLResponse, tags=["Web UI"])
 def register_page(request: Request):
     """Sign-up page styled with TailAdmin"""
+    if not settings.REGISTER:
+        return RedirectResponse(url="/login", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
     return templates.TemplateResponse(request=request, name="signup.html", context={"app_name": settings.APP_NAME})
 
 
