@@ -34,6 +34,12 @@ def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
     Registers a new organizer/user account.
     Generates a dummy verification token printed to console for email verification.
     """
+    if not settings.REGISTER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Pendaftaran akun baru saat ini dinonaktifkan oleh administrator.",
+        )
+
     existing = db.query(User).filter(User.email == user_data.email.lower()).first()
     if existing:
         raise HTTPException(
