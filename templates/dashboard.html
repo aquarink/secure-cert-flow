@@ -69,6 +69,14 @@
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">4. Presensi Kehadiran</span>
         </button>
+
+        <button type="button" @click="switchTab('special_roles')"
+                :class="[activeTab === 'special_roles' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white', sidebarCollapsed ? 'justify-center px-2' : 'justify-start text-left px-3.5']"
+                class="w-full flex items-center space-x-3 py-2.5 rounded-xl text-sm font-medium transition"
+                :title="sidebarCollapsed ? '5. Peran Khusus & Panitia' : ''">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+          <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">5. Peran Khusus</span>
+        </button>
       </nav>
     </div>
 
@@ -230,15 +238,28 @@
                   </div>
                   <div>
                     <label class="block text-[10px] uppercase font-bold text-gray-400 mb-1">Peran Target Peserta</label>
-                    <select x-model="activeTemplate.role_target" class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-700 text-white font-semibold text-xs focus:border-indigo-500">
-                      <option value="ALL">Semua Peran (ALL)</option>
-                      <option value="Presenter">Presenter</option>
-                      <option value="Participant">Participant / Peserta</option>
-                      <option value="Author">Author / Penulis</option>
-                      <option value="Speaker">Speaker / Narasumber</option>
-                      <option value="Committee">Committee / Panitia</option>
-                      <option value="Trainer">Trainer / Instruktur</option>
-                    </select>
+                    <div class="flex items-center space-x-1.5">
+                      <select x-model="activeTemplate.role_target" class="px-3 py-1.5 rounded-xl bg-gray-900 border border-gray-700 text-white font-semibold text-xs focus:border-indigo-500">
+                        <option value="ALL">Semua Peran (ALL)</option>
+                        <option value="Presenter">Presenter</option>
+                        <option value="Participant">Participant / Peserta</option>
+                        <option value="Author">Author / Penulis</option>
+                        <option value="Speaker">Speaker / Narasumber</option>
+                        <option value="Committee">Committee / Panitia</option>
+                        <option value="Reviewer">Reviewer / Mitra Bestari</option>
+                        <option value="Session Chair">Session Chair</option>
+                        <option value="Keynote Speaker">Keynote Speaker</option>
+                        <option value="Invited Speaker">Invited Speaker</option>
+                        <option value="Moderator">Moderator</option>
+                        <option value="Cleaning Service">Cleaning Service</option>
+                        <option value="Volunteer">Volunteer / Relawan</option>
+                        <option value="Trainer">Trainer / Instruktur</option>
+                        <template x-if="!['ALL','Presenter','Participant','Author','Speaker','Committee','Reviewer','Session Chair','Keynote Speaker','Invited Speaker','Moderator','Cleaning Service','Volunteer','Trainer'].includes(activeTemplate.role_target)">
+                          <option :value="activeTemplate.role_target" x-text="activeTemplate.role_target" selected></option>
+                        </template>
+                      </select>
+                      <input type="text" x-model="activeTemplate.role_target" placeholder="Ketik custom..." title="Ketik peran kustom jika tidak ada di pilihan" class="w-28 px-2 py-1.5 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                    </div>
                   </div>
                 </div>
 
@@ -825,6 +846,296 @@
         </div>
       </div>
 
+      <!-- =================================================================== -->
+      <!-- TAB 5: PERAN KHUSUS & PANITIA (BULK SPECIAL ROLES ISSUER)          -->
+      <!-- =================================================================== -->
+      <div x-show="activeTab === 'special_roles'" x-cloak class="space-y-6">
+        
+        <!-- Header & Event Selector -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-900/50 text-purple-300 border border-purple-700">Fitur Dinamis Panitia</span>
+              <h2 class="text-xl font-bold text-white">Sertifikat Peran Khusus & Panitia</h2>
+            </div>
+            <p class="text-sm text-gray-400 mt-1">Terbitkan sertifikat resmi secara massal untuk peran non-presensi (Committee, Reviewer, Session Chair, Cleaning Service, dll.) dengan kode klaim unik dan pengiriman email otomatis.</p>
+          </div>
+
+          <!-- Event Switcher -->
+          <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2 bg-gray-900 px-3.5 py-2 rounded-xl border border-gray-800 shadow-sm">
+              <span class="text-xs text-gray-400 font-medium">Acara:</span>
+              <select x-model="selectedEventId" @change="loadEventTemplates(); loadSpecialRoles();" class="bg-gray-950 border border-gray-700 text-white font-semibold text-xs rounded-lg px-2.5 py-1 focus:border-indigo-500 max-w-xs truncate">
+                <template x-for="ev in events" :key="ev.id">
+                  <option :value="ev.id" x-text="ev.name"></option>
+                </template>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Info / Notice Banner -->
+        <div class="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-800/40 flex items-start space-x-3 text-xs text-indigo-200">
+          <svg class="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <div>
+            <strong class="text-white font-semibold">Keamanan Akses Peran Khusus:</strong> Peran khusus (seperti Committee, Reviewer, Cleaning Service, Session Chair, dll.) <strong>tidak dapat diklaim secara sembarangan</strong> di formulir presensi publik. Sertifikat peran khusus hanya dapat diterbitkan melalui halaman ini oleh panitia, dan setiap penerima akan menerima Kode Klaim 8-karakter yang dikirimkan langsung ke email mereka.
+          </div>
+        </div>
+
+        <!-- Metric Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Sertifikat Terbit</div>
+              <div class="text-2xl font-black text-white mt-1" x-text="specialRoles.length"></div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-400 flex items-center justify-center text-lg font-bold">🎖️</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Variasi Peran Terdaftar</div>
+              <div class="text-2xl font-black text-white mt-1" x-text="getSpecialRoleCounts().roleCount"></div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center text-lg font-bold">👥</div>
+          </div>
+          <div class="p-4 rounded-2xl bg-gray-900 border border-gray-800 flex items-center justify-between">
+            <div>
+              <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Metode Pengiriman</div>
+              <div class="text-sm font-bold text-emerald-400 mt-1 flex items-center space-x-1">
+                <span>SMTP2GO Active</span>
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              </div>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-lg font-bold">📧</div>
+          </div>
+        </div>
+
+        <!-- Issuer Card (Input Form) -->
+        <div class="p-6 rounded-2xl bg-gray-900 border border-gray-800 space-y-6 shadow-xl">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-gray-800 pb-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <span>Penerbitan Sertifikat Peran Khusus (Bulk Issuer)</span>
+              </h3>
+              <p class="text-xs text-gray-400 mt-0.5">Pilih peran, hubungkan desain template, lalu masukkan daftar nama dan email penerima.</p>
+            </div>
+
+            <!-- Mode Selector (Tabs) -->
+            <div class="flex items-center bg-gray-950 p-1 rounded-xl border border-gray-800 text-xs">
+              <button type="button" @click="specialRoleInputMode = 'text'" :class="specialRoleInputMode === 'text' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg transition">
+                📋 Paste Teks Cepat
+              </button>
+              <button type="button" @click="specialRoleInputMode = 'file'" :class="specialRoleInputMode === 'file' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg transition">
+                📂 Upload Excel / CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Configuration Fields Row -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <!-- 1. Role Selection -->
+            <div>
+              <label class="block font-semibold text-gray-300 uppercase mb-1.5">1. Peran Penerima (Role) <span class="text-rose-400">*</span></label>
+              <select x-model="specialRolePreset" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 font-medium">
+                <option value="Committee">Committee (Panitia Acara)</option>
+                <option value="Reviewer">Reviewer (Mitra Bestari / Reviewer Paper)</option>
+                <option value="Session Chair">Session Chair</option>
+                <option value="Keynote Speaker">Keynote Speaker</option>
+                <option value="Invited Speaker">Invited Speaker</option>
+                <option value="Moderator">Moderator</option>
+                <option value="Cleaning Service">Cleaning Service (Layanan Kebersihan)</option>
+                <option value="Security">Security (Keamanan & Ketertiban)</option>
+                <option value="Volunteer">Volunteer / LO (Liaison Officer)</option>
+                <option value="Trainer">Trainer / Instruktur</option>
+                <option value="CUSTOM">+ Ketik Nama Peran Kustom Lainnya...</option>
+              </select>
+
+              <!-- Custom Role Text Input -->
+              <div x-show="specialRolePreset === 'CUSTOM'" class="mt-2">
+                <input type="text" x-model="specialRoleCustom" placeholder="Contoh: Perlengkapan & Logistik, Master of Ceremony, dll..." class="w-full px-3 py-2 rounded-xl bg-gray-900 border border-indigo-500/60 text-white text-xs focus:ring-1 focus:ring-indigo-500">
+              </div>
+            </div>
+
+            <!-- 2. Template Selection -->
+            <div>
+              <label class="block font-semibold text-gray-300 uppercase mb-1.5">2. Hubungkan Desain Template Sertifikat</label>
+              <select x-model="specialRoleTemplateId" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 font-medium">
+                <option value="">Otomatis (Sesuai Role Target Template / Default)</option>
+                <template x-for="tpl in eventTemplates" :key="tpl.id">
+                  <option :value="tpl.id" x-text="tpl.name + ' (Target: ' + (tpl.role_target || 'ALL') + (tpl.is_default ? ' ⭐' : '') + ')'"></option>
+                </template>
+              </select>
+              <p class="text-[10px] text-gray-400 mt-1">Pilih desain template khusus jika ada layout sertifikat tersendiri untuk peran ini.</p>
+            </div>
+
+            <!-- 3. Notification & Email Options -->
+            <div>
+              <label class="block font-semibold text-gray-300 uppercase mb-1.5">3. Notifikasi Email Otomatis</label>
+              <div class="p-2.5 rounded-xl bg-gray-950 border border-gray-800 space-y-2">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input type="checkbox" x-model="specialRoleSendEmail" class="w-4 h-4 rounded text-indigo-600 bg-gray-900 border-gray-700 focus:ring-indigo-500">
+                  <span class="text-gray-200 font-medium text-xs">Kirim Kode Klaim via Email</span>
+                </label>
+                <p class="text-[10px] text-gray-400 leading-normal">Penerima akan mendapatkan email berisi Kode Klaim 8-karakter dan link direct untuk mengunduh sertifikat.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Input Mode A: Paste Teks Cepat -->
+          <div x-show="specialRoleInputMode === 'text'" class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <label class="font-semibold text-gray-300 uppercase">
+                Daftar Penerima <span class="text-gray-400 font-normal normal-case">(Satu baris per orang: <code class="text-indigo-300 font-mono">Nama Lengkap, Email, Institusi (opsional)</code>)</span>
+              </label>
+              <button type="button" @click="specialRoleText = 'Ahmad Fauzi, ahmad.fauzi@example.com, UIN Syarif Hidayatullah Jakarta\nDr. Siti Aminah, siti.aminah@example.com, Universitas Indonesia\nBudi Santoso, budi.santoso@example.com, BRIN'" class="text-[11px] text-indigo-400 hover:text-indigo-300 underline font-medium">
+                Gunakan Contoh Teks
+              </button>
+            </div>
+            <textarea x-model="specialRoleText" rows="6" placeholder="Contoh:&#10;Ahmad Fauzi, ahmad.fauzi@example.com, UIN Syarif Hidayatullah Jakarta&#10;Dr. Siti Aminah, siti.aminah@example.com, Universitas Indonesia&#10;Budi Santoso, budi.santoso@example.com, Tim Kebersihan & Layanan" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-700 text-white font-mono text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 leading-relaxed"></textarea>
+            <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
+              <span>💡 Format: <code>Nama Lengkap, Email, Institusi (opsional)</code>. Pemisah dapat berupa koma (,), titik koma (;), atau tab.</span>
+            </div>
+          </div>
+
+          <!-- Input Mode B: Upload Spreadsheet -->
+          <div x-show="specialRoleInputMode === 'file'" class="space-y-4">
+            <div class="p-6 rounded-2xl bg-gray-950 border border-dashed border-gray-700 flex flex-col items-center justify-center text-center">
+              <div class="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-2xl mb-3">
+                📊
+              </div>
+              <h4 class="text-sm font-bold text-white mb-1">Unggah Spreadsheet Penerima (.xlsx, .xls, .csv)</h4>
+              <p class="text-xs text-gray-400 max-w-md mb-4">Pastikan file memiliki header kolom minimal: <strong>Nama</strong> (atau Name) dan <strong>Email</strong>. Kolom <strong>Institusi</strong> opsional.</p>
+              
+              <div class="flex flex-col sm:flex-row items-center gap-3">
+                <input type="file" id="specialRoleFileInput" accept=".xlsx,.xls,.csv" class="text-xs text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500 cursor-pointer bg-gray-900 rounded-xl p-1 border border-gray-700">
+                <button type="button" @click="downloadSpecialRoleSampleCsv()" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-medium text-xs border border-gray-700 transition flex items-center space-x-1.5 shadow-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                  <span>Download Format Contoh (.csv)</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Action Button -->
+          <div class="flex items-center justify-end space-x-3 pt-2 border-t border-gray-800">
+            <button type="button" @click="submitSpecialRoles()" :disabled="specialRoleSubmitting" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs shadow-lg shadow-indigo-600/30 flex items-center space-x-2 transition">
+              <svg x-show="specialRoleSubmitting" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+              <span x-text="specialRoleSubmitting ? 'Menerbitkan & Mengirim Email...' : '🚀 Terbitkan Sertifikat & Kirim Email'"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Card: Daftar Sertifikat Terbit -->
+        <div class="p-6 rounded-2xl bg-gray-900 border border-gray-800 space-y-4 shadow-xl">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h3 class="text-base font-bold text-white flex items-center space-x-2">
+                <span>Daftar Sertifikat Peran Khusus Terbit</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-gray-800 text-indigo-300 border border-gray-700" x-text="filteredSpecialRoles().length + ' data'"></span>
+              </h3>
+              <p class="text-xs text-gray-400 mt-0.5">Kelola kode klaim, uji unduh sertifikat, atau kirim ulang email klaim ke penerima.</p>
+            </div>
+
+            <!-- Search, Filter, & Export -->
+            <div class="flex flex-wrap items-center gap-2.5">
+              <!-- Live Search -->
+              <div class="relative">
+                <input type="text" x-model="specialRolesSearch" placeholder="Cari nama, email, kode..." class="w-48 md:w-56 px-3 py-1.5 pl-8 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                <svg class="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+              </div>
+
+              <!-- Filter by Role -->
+              <select x-model="specialRolesFilterRole" class="px-3 py-1.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                <option value="">Semua Peran</option>
+                <template x-for="r in Array.from(new Set(specialRoles.map(i => i.role)))" :key="r">
+                  <option :value="r" x-text="r"></option>
+                </template>
+              </select>
+
+              <!-- Refresh Button -->
+              <button type="button" @click="loadSpecialRoles()" class="p-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white transition border border-gray-700" title="Muat Ulang Data">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              </button>
+
+              <!-- Export CSV Button -->
+              <button type="button" @click="exportSpecialRolesCsv()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white font-medium text-xs border border-gray-700 transition flex items-center space-x-1.5 shadow-sm">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="overflow-x-auto rounded-xl border border-gray-800">
+            <table class="w-full text-left text-xs text-gray-300">
+              <thead class="bg-gray-950 text-gray-400 font-semibold border-b border-gray-800 uppercase tracking-wider text-[11px]">
+                <tr>
+                  <th class="px-4 py-3 w-12 text-center">#</th>
+                  <th class="px-4 py-3">Penerima & Email</th>
+                  <th class="px-4 py-3">Peran (Role)</th>
+                  <th class="px-4 py-3">Template</th>
+                  <th class="px-4 py-3">Nomor Sertifikat</th>
+                  <th class="px-4 py-3">Kode Klaim</th>
+                  <th class="px-4 py-3">Tgl Terbit</th>
+                  <th class="px-4 py-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-800/60 bg-gray-900/50">
+                <template x-for="(item, idx) in filteredSpecialRoles()" :key="item.id">
+                  <tr class="hover:bg-gray-800/40 transition">
+                    <td class="px-4 py-3 text-center text-gray-500 font-mono" x-text="idx + 1"></td>
+                    <td class="px-4 py-3">
+                      <div class="font-bold text-white text-sm" x-text="item.name"></div>
+                      <div class="text-[11px] text-gray-400 font-mono" x-text="item.email"></div>
+                      <div x-show="item.institution" class="text-[10px] text-gray-500 truncate max-w-xs mt-0.5" x-text="item.institution"></div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <span class="inline-block px-2.5 py-1 rounded-full text-xs font-bold border shadow-sm" :class="getRoleBadgeClass(item.role)" x-text="item.role"></span>
+                    </td>
+                    <td class="px-4 py-3 text-gray-300 whitespace-nowrap">
+                      <span class="text-xs" x-text="item.template_name || 'Default Acara'"></span>
+                    </td>
+                    <td class="px-4 py-3 font-mono text-[11px] text-gray-300 whitespace-nowrap" x-text="item.certificate_number"></td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                      <div class="flex items-center space-x-1.5">
+                        <span class="px-2 py-0.5 rounded bg-indigo-950/80 border border-indigo-500/40 text-amber-400 font-mono font-bold text-xs" x-text="item.claim_code"></span>
+                        <button type="button" @click="copyClaimCode(item.claim_code)" class="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-white transition" title="Salin Kode Klaim">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        </button>
+                      </div>
+                    </td>
+                    <td class="px-4 py-3 text-gray-400 font-mono text-[11px] whitespace-nowrap" x-text="new Date(item.created_at).toLocaleDateString('id-ID')"></td>
+                    <td class="px-4 py-3 text-center whitespace-nowrap">
+                      <div class="inline-flex items-center space-x-1.5">
+                        <!-- Direct Link / Preview -->
+                        <a :href="item.cert_url" target="_blank" class="p-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white transition border border-indigo-500/40 shadow-sm" title="Lihat Sertifikat Asli">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                        </a>
+                        <!-- Resend Email -->
+                        <button type="button" @click="resendSpecialRoleEmail(item)" :disabled="resendingSpecialRoleId === item.id" class="p-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white transition border border-emerald-500/40 shadow-sm disabled:opacity-50" title="Kirim Ulang Email Kode Klaim">
+                          <svg x-show="resendingSpecialRoleId !== item.id" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                          <svg x-show="resendingSpecialRoleId === item.id" class="animate-spin h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                        </button>
+                        <!-- Delete -->
+                        <button type="button" @click="deleteSpecialRole(item)" class="p-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white transition border border-rose-500/40 shadow-sm" title="Hapus Sertifikat">
+                          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+                <tr x-show="specialRoles.length === 0">
+                  <td colspan="8" class="px-4 py-8 text-center text-gray-500">
+                    Belum ada sertifikat peran khusus yang diterbitkan untuk acara ini. Silakan gunakan form di atas untuk menerbitkan.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
     </main>
   </div>
 
@@ -1031,15 +1342,27 @@
 
         <div>
           <label class="block font-semibold text-gray-300 uppercase mb-1">Peran Target Peserta <span class="text-rose-400">*</span></label>
-          <select x-model="newTemplateForm.role_target" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
-            <option value="ALL">Semua Peran (ALL)</option>
-            <option value="Presenter">Presenter / Pemakalah</option>
-            <option value="Participant">Participant / Peserta</option>
-            <option value="Author">Author / Penulis</option>
-            <option value="Speaker">Speaker / Narasumber</option>
-            <option value="Committee">Committee / Panitia</option>
-            <option value="Trainer">Trainer / Instruktur</option>
-          </select>
+          <div class="space-y-1.5">
+            <select x-model="newTemplateForm.role_target" class="w-full px-3.5 py-2.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+              <option value="ALL">Semua Peran (ALL)</option>
+              <option value="Presenter">Presenter / Pemakalah</option>
+              <option value="Participant">Participant / Peserta</option>
+              <option value="Author">Author / Penulis</option>
+              <option value="Speaker">Speaker / Narasumber</option>
+              <option value="Committee">Committee / Panitia</option>
+              <option value="Reviewer">Reviewer / Mitra Bestari</option>
+              <option value="Session Chair">Session Chair</option>
+              <option value="Keynote Speaker">Keynote Speaker</option>
+              <option value="Invited Speaker">Invited Speaker</option>
+              <option value="Moderator">Moderator</option>
+              <option value="Cleaning Service">Cleaning Service</option>
+              <option value="Volunteer">Volunteer / Relawan</option>
+              <option value="Trainer">Trainer / Instruktur</option>
+              <option value="CUSTOM">+ Ketik Peran Kustom Lainnya...</option>
+            </select>
+            <input x-show="newTemplateForm.role_target === 'CUSTOM' || !['ALL','Presenter','Participant','Author','Speaker','Committee','Reviewer','Session Chair','Keynote Speaker','Invited Speaker','Moderator','Cleaning Service','Volunteer','Trainer'].includes(newTemplateForm.role_target)"
+                   type="text" x-model="newTemplateCustomRole" placeholder="Ketik nama peran kustom (misal: Cleaning Service, dll)..." class="w-full px-3.5 py-2 rounded-xl bg-gray-900 border border-gray-700 text-white text-xs focus:border-indigo-500">
+          </div>
           <p class="text-[10px] text-gray-400 mt-1">Sertifikat akan otomatis memilih template ini bila peran peserta cocok.</p>
         </div>
 
@@ -1505,6 +1828,21 @@
         showAddTemplateModal: false,
         newTemplateLoading: false,
         newTemplateForm: { name: '', role_target: 'ALL', is_default: false },
+        newTemplateCustomRole: '',
+
+        // Special Roles State (Panitia, Reviewer, Cleaning Service, etc.)
+        specialRoles: [],
+        specialRolesLoading: false,
+        specialRolesSearch: '',
+        specialRolesFilterRole: '',
+        specialRolePreset: 'Committee',
+        specialRoleCustom: '',
+        specialRoleTemplateId: '',
+        specialRoleSendEmail: true,
+        specialRoleInputMode: 'text',
+        specialRoleText: '',
+        specialRoleSubmitting: false,
+        resendingSpecialRoleId: null,
 
         // Interactive Drag-and-Drop Canvas State
         draggedTarget: null, // 'field', 'qr', 'certNum'
@@ -1518,7 +1856,8 @@
             events: '1. Kelola Acara',
             designer: '2. Template & Visual Placement',
             papers: '3. Katalog Judul Paper & Sertifikat Authors',
-            attendance: '4. Presensi Kehadiran Terverifikasi'
+            attendance: '4. Presensi Kehadiran Terverifikasi',
+            special_roles: '5. Penerbitan Sertifikat Peran Khusus & Panitia'
           };
           return map[this.activeTab] || 'Dashboard';
         },
@@ -1711,6 +2050,10 @@
             this.loadAuthorCerts();
           }
           if (tab === 'attendance') this.loadAttendances();
+          if (tab === 'special_roles') {
+            this.loadEventTemplates();
+            this.loadSpecialRoles();
+          }
         },
 
         selectEvent(ev, tab) {
@@ -1923,7 +2266,8 @@
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             formData.append('name', this.newTemplateForm.name || 'Template Baru');
-            formData.append('role_target', this.newTemplateForm.role_target || 'ALL');
+            const finalRole = (this.newTemplateForm.role_target === 'CUSTOM' ? this.newTemplateCustomRole : this.newTemplateForm.role_target) || 'ALL';
+            formData.append('role_target', finalRole);
             formData.append('is_default', this.newTemplateForm.is_default ? 'true' : 'false');
 
             const token = localStorage.getItem('auth_token');
@@ -2490,6 +2834,278 @@
             }
           } catch (e) {
             alert('Gagal mereset presensi: ' + e.message);
+          }
+        },
+
+        // ===================================================================
+        // Special Roles (Panitia, Reviewer, Cleaning Service, etc.) Methods
+        // ===================================================================
+        getEffectiveSpecialRole() {
+          if (this.specialRolePreset === 'CUSTOM') {
+            return (this.specialRoleCustom || '').trim() || 'Committee';
+          }
+          return this.specialRolePreset;
+        },
+
+        getRoleBadgeClass(role) {
+          const r = (role || '').toLowerCase();
+          if (r.includes('committee') || r.includes('panitia')) return 'bg-purple-900/40 text-purple-300 border-purple-700/60';
+          if (r.includes('reviewer') || r.includes('mitra')) return 'bg-blue-900/40 text-blue-300 border-blue-700/60';
+          if (r.includes('session') || r.includes('chair')) return 'bg-amber-900/40 text-amber-300 border-amber-700/60';
+          if (r.includes('speaker') || r.includes('narasumber')) return 'bg-emerald-900/40 text-emerald-300 border-emerald-700/60';
+          if (r.includes('clean') || r.includes('kebersihan') || r.includes('service')) return 'bg-teal-900/40 text-teal-300 border-teal-700/60';
+          if (r.includes('security') || r.includes('keamanan')) return 'bg-rose-900/40 text-rose-300 border-rose-700/60';
+          if (r.includes('volunteer') || r.includes('relawan') || r.includes('lo')) return 'bg-indigo-900/40 text-indigo-300 border-indigo-700/60';
+          return 'bg-gray-800 text-gray-300 border-gray-700';
+        },
+
+        async loadSpecialRoles() {
+          if (!this.selectedEventId) return;
+          this.specialRolesLoading = true;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles`, {
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              this.specialRoles = await res.json();
+            }
+          } catch (e) {
+            console.error('Error loading special roles:', e);
+          } finally {
+            this.specialRolesLoading = false;
+          }
+        },
+
+        filteredSpecialRoles() {
+          let list = this.specialRoles;
+          if (this.specialRolesFilterRole) {
+            list = list.filter(item => item.role.toLowerCase() === this.specialRolesFilterRole.toLowerCase());
+          }
+          if (this.specialRolesSearch && this.specialRolesSearch.trim()) {
+            const q = this.specialRolesSearch.toLowerCase().trim();
+            list = list.filter(item =>
+              (item.name && item.name.toLowerCase().includes(q)) ||
+              (item.email && item.email.toLowerCase().includes(q)) ||
+              (item.role && item.role.toLowerCase().includes(q)) ||
+              (item.claim_code && item.claim_code.toLowerCase().includes(q)) ||
+              (item.certificate_number && item.certificate_number.toLowerCase().includes(q))
+            );
+          }
+          return list;
+        },
+
+        getSpecialRoleCounts() {
+          const uniqueRoles = new Set(this.specialRoles.map(i => i.role));
+          return {
+            total: this.specialRoles.length,
+            roleCount: uniqueRoles.size
+          };
+        },
+
+        async submitSpecialRoles() {
+          if (!this.selectedEventId) {
+            alert('Pilih acara terlebih dahulu.');
+            return;
+          }
+          const role = this.getEffectiveSpecialRole();
+          if (!role) {
+            alert('Nama peran tidak boleh kosong.');
+            return;
+          }
+
+          if (this.specialRoleInputMode === 'text') {
+            const rawText = (this.specialRoleText || '').trim();
+            if (!rawText) {
+              alert('Harap masukkan minimal satu baris data penerima.');
+              return;
+            }
+
+            const lines = rawText.split('\n');
+            const recipients = [];
+            for (let line of lines) {
+              line = line.trim();
+              if (!line) continue;
+              const parts = line.includes(';') ? line.split(';') : (line.includes('\t') ? line.split('\t') : line.split(','));
+              const name = (parts[0] || '').trim();
+              const email = (parts[1] || '').trim();
+              const institution = (parts[2] || '').trim();
+              if (name && email) {
+                recipients.push({ name, email, institution });
+              }
+            }
+
+            if (recipients.length === 0) {
+              alert('Tidak ada data yang valid. Pastikan setiap baris berisi minimal Nama dan Email yang dipisahkan koma.');
+              return;
+            }
+
+            this.specialRoleSubmitting = true;
+            try {
+              const token = localStorage.getItem('auth_token');
+              const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles/bulk`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                  role: role,
+                  template_id: this.specialRoleTemplateId || null,
+                  send_email: this.specialRoleSendEmail,
+                  recipients: recipients
+                })
+              });
+
+              const data = await res.json();
+              if (res.ok) {
+                alert(`Berhasil menerbitkan ${data.created_count} sertifikat untuk peran '${role}'!${data.skipped_count ? ' (' + data.skipped_count + ' dilewati/sudah ada)' : ''}`);
+                this.specialRoleText = '';
+                await this.loadSpecialRoles();
+              } else {
+                alert('Gagal menerbitkan sertifikat: ' + (data.detail || 'Terjadi kesalahan'));
+              }
+            } catch (e) {
+              alert('Gagal: ' + e.message);
+            } finally {
+              this.specialRoleSubmitting = false;
+            }
+
+          } else {
+            // File upload mode
+            const fileInput = document.getElementById('specialRoleFileInput');
+            const file = fileInput ? fileInput.files[0] : null;
+            if (!file) {
+              alert('Harap pilih file spreadsheet (.xlsx, .xls, atau .csv).');
+              return;
+            }
+
+            this.specialRoleSubmitting = true;
+            try {
+              const token = localStorage.getItem('auth_token');
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('role', role);
+              if (this.specialRoleTemplateId) formData.append('template_id', this.specialRoleTemplateId);
+              formData.append('send_email', this.specialRoleSendEmail ? 'true' : 'false');
+
+              const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles/upload`, {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                body: formData
+              });
+
+              const data = await res.json();
+              if (res.ok) {
+                alert(`Berhasil menerbitkan ${data.created_count} sertifikat dari file spreadsheet!`);
+                if (fileInput) fileInput.value = '';
+                await this.loadSpecialRoles();
+              } else {
+                alert('Gagal memproses file: ' + (data.detail || 'Format file salah'));
+              }
+            } catch (e) {
+              alert('Gagal mengunggah file: ' + e.message);
+            } finally {
+              this.specialRoleSubmitting = false;
+            }
+          }
+        },
+
+        async resendSpecialRoleEmail(item) {
+          if (!this.selectedEventId || !item) return;
+          this.resendingSpecialRoleId = item.id;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles/${item.id}/resend-email`, {
+              method: 'POST',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            const data = await res.json();
+            if (res.ok) {
+              alert(data.message || `Email kode klaim berhasil dikirim ulang ke ${item.email}!`);
+            } else {
+              alert('Gagal mengirim email: ' + (data.detail || 'Terjadi kesalahan'));
+            }
+          } catch (e) {
+            alert('Gagal mengirim email: ' + e.message);
+          } finally {
+            this.resendingSpecialRoleId = null;
+          }
+        },
+
+        async deleteSpecialRole(item) {
+          if (!this.selectedEventId || !item) return;
+          if (!confirm(`Hapus sertifikat peran khusus untuk '${item.name}' (${item.role})? Tindakan ini tidak dapat dibatalkan.`)) {
+            return;
+          }
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles/${item.id}`, {
+              method: 'DELETE',
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              await this.loadSpecialRoles();
+            } else {
+              const err = await res.json();
+              alert('Gagal menghapus: ' + (err.detail || 'Terjadi kesalahan'));
+            }
+          } catch (e) {
+            alert('Gagal menghapus: ' + e.message);
+          }
+        },
+
+        downloadSpecialRoleSampleCsv() {
+          const csv = 'Nama Lengkap,Email,Institusi\n' +
+                      'Ahmad Fauzi, ahmad.fauzi@example.com, UIN Syarif Hidayatullah Jakarta\n' +
+                      'Dr. Siti Aminah, siti.aminah@example.com, Universitas Indonesia\n' +
+                      'Budi Santoso, budi.santoso@example.com, Badan Riset dan Inovasi Nasional (BRIN)\n' +
+                      'Sri Wahyuni, sri.wahyuni@example.com, Panitia Divisi Kebersihan & Layanan Umum\n';
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'Contoh_Format_Peran_Khusus.csv';
+          a.click();
+        },
+
+        exportSpecialRolesCsv() {
+          const list = this.filteredSpecialRoles();
+          if (list.length === 0) {
+            alert('Tidak ada data peran khusus untuk diekspor.');
+            return;
+          }
+          let csv = 'Nama Lengkap,Email,Peran,Institusi,Nomor Sertifikat,Kode Klaim,Template,Tanggal Terbit,Link Sertifikat\n';
+          list.forEach(item => {
+            const name = `"${(item.name || '').replace(/"/g, '""')}"`;
+            const email = `"${(item.email || '').replace(/"/g, '""')}"`;
+            const role = `"${(item.role || '').replace(/"/g, '""')}"`;
+            const inst = `"${(item.institution || '').replace(/"/g, '""')}"`;
+            const certNum = `"${item.certificate_number || ''}"`;
+            const claim = `"${item.claim_code || ''}"`;
+            const tpl = `"${(item.template_name || '').replace(/"/g, '""')}"`;
+            const date = `"${new Date(item.created_at).toLocaleString('id-ID')}"`;
+            const link = `"${window.location.origin}/verify/${item.claim_code}"`;
+            csv += `${name},${email},${role},${inst},${certNum},${claim},${tpl},${date},${link}\n`;
+          });
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Sertifikat_Peran_Khusus_${(this.getSelectedEvent()?.name || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+          a.click();
+        },
+
+        copyClaimCode(code) {
+          if (!code) return;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(code).then(() => {
+              alert(`Kode klaim '${code}' berhasil disalin ke clipboard!`);
+            }).catch(() => {
+              prompt('Salin kode klaim berikut:', code);
+            });
+          } else {
+            prompt('Salin kode klaim berikut:', code);
           }
         },
 
