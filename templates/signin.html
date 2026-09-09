@@ -47,9 +47,11 @@
       </button>
     </form>
 
+    {% if allow_registration %}
     <div class="mt-6 text-center text-sm text-gray-400">
       Belum punya akun? <a href="/register" class="text-indigo-400 hover:underline font-medium">Daftar Akun Baru</a>
     </div>
+    {% endif %}
   </div>
 
   <script>
