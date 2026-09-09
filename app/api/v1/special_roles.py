@@ -179,12 +179,18 @@ def bulk_issue_special_roles(
         if not chosen_template:
             raise HTTPException(status_code=400, detail="Template sertifikat yang dipilih tidak ditemukan pada acara ini.")
     else:
-        # Try matching by role_target
+        # Try matching by role_target or template name
         for t in event.templates:
             if t.role_target and t.role_target.lower() == req.role.lower():
                 chosen_template = t
                 target_template_id = t.id
                 break
+        if not chosen_template:
+            for t in event.templates:
+                if t.name and t.name.lower() == req.role.lower():
+                    chosen_template = t
+                    target_template_id = t.id
+                    break
         if not chosen_template and event.template:
             chosen_template = event.template
             target_template_id = event.template.id
