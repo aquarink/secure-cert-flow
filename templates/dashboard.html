@@ -8,6 +8,7 @@
   <link rel="shortcut icon" href="/static/images/favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cinzel:wght@600;700;800&family=Great+Vibes&family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Roboto:wght@500;700&display=swap" rel="stylesheet">
@@ -76,6 +77,14 @@
                 :title="sidebarCollapsed ? '5. Peran Khusus & Panitia' : ''">
           <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
           <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">5. Peran Khusus</span>
+        </button>
+
+        <button type="button" @click="switchTab('analytics')"
+                :class="[activeTab === 'analytics' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:bg-gray-800 hover:text-white', sidebarCollapsed ? 'justify-center px-2' : 'justify-start text-left px-3.5']"
+                class="w-full flex items-center space-x-3 py-2.5 rounded-xl text-sm font-medium transition"
+                :title="sidebarCollapsed ? '6. Analisis & Statistik' : ''">
+          <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          <span x-show="!sidebarCollapsed" class="text-left font-semibold whitespace-nowrap">6. Analisis & Statistik</span>
         </button>
       </nav>
     </div>
@@ -173,10 +182,11 @@
                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                   </a>
                 </div>
-                <div class="grid grid-cols-3 gap-1.5">
-                  <button @click="selectEvent(event, 'designer')" class="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-indigo-400 text-center transition">Template</button>
-                  <button @click="selectEvent(event, 'papers')" class="px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-emerald-400 text-center transition">Paper/Karya</button>
-                  <button @click="selectEvent(event, 'attendance')" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white text-center transition">Presensi</button>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                  <button @click="selectEvent(event, 'designer')" class="px-2 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-indigo-400 text-center transition">Template</button>
+                  <button @click="selectEvent(event, 'papers')" class="px-2 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-emerald-400 text-center transition">Paper/Karya</button>
+                  <button @click="selectEvent(event, 'attendance')" class="px-2 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-amber-400 text-center transition">Presensi</button>
+                  <button @click="selectEvent(event, 'analytics')" class="px-2 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white text-center transition">Analisis</button>
                 </div>
               </div>
             </div>
@@ -1185,6 +1195,424 @@
 
       </div>
 
+      <!-- =================================================================== -->
+      <!-- TAB 6: ANALISIS & STATISTIK ACARA                                  -->
+      <!-- =================================================================== -->
+      <div x-show="activeTab === 'analytics'" x-cloak class="space-y-6">
+        
+        <!-- Header & Event Selector Toolbar -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-900/60 text-indigo-300 border border-indigo-700/60">Menu 6 • Event Intelligence</span>
+              <h2 class="text-xl font-bold text-white">Analisis & Statistik Acara</h2>
+            </div>
+            <p class="text-xs text-gray-400 mt-1">
+              Ringkasan komprehensif kehadiran (peserta, presenter, author), klaim sertifikat, dan analisis institusi.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <!-- Event Selector -->
+            <div class="flex items-center space-x-2">
+              <label class="text-xs text-gray-400 font-semibold whitespace-nowrap">Pilih Acara:</label>
+              <select x-model="selectedEventId" @change="loadAnalytics()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold focus:border-indigo-500 focus:outline-none shadow-sm">
+                <template x-for="event in events" :key="event.id">
+                  <option :value="event.id" x-text="event.name"></option>
+                </template>
+              </select>
+            </div>
+
+            <!-- Refresh Button -->
+            <button type="button" @click="loadAnalytics()" :disabled="analyticsLoading" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700 transition flex items-center space-x-1.5 shadow-md" title="Segarkan Data Analisis">
+              <svg class="w-4 h-4" :class="analyticsLoading ? 'animate-spin text-indigo-400' : 'text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span x-text="analyticsLoading ? 'Memuat...' : 'Refresh'"></span>
+            </button>
+
+            <!-- Export CSV Report -->
+            <button type="button" @click="exportAnalyticsCSV()" :disabled="!selectedEventId || analyticsLoading" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700 transition flex items-center space-x-1.5 shadow-md" title="Unduh Rekap Laporan Analisis CSV">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span>Export Rekap CSV</span>
+            </button>
+
+            <!-- Cetak / Print PDF -->
+            <button type="button" @click="printAnalytics()" class="px-3 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700 transition flex items-center space-x-1.5 shadow-md" title="Cetak / Simpan PDF Halaman">
+              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+              <span>Cetak / PDF</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Loading State Overlay -->
+        <div x-show="analyticsLoading" class="p-12 rounded-3xl bg-gray-900 border border-gray-800 text-center space-y-3">
+          <svg class="animate-spin h-8 w-8 text-indigo-500 mx-auto" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+          <div class="text-sm text-gray-300 font-semibold">Menghitung metrik & analisis data acara...</div>
+          <div class="text-xs text-gray-500">Mengkalkulasi presensi, sertifikat, klaim peran, dan statistik institusi.</div>
+        </div>
+
+        <!-- Main Analytics View -->
+        <div x-show="!analyticsLoading && analyticsData" class="space-y-6">
+
+          <!-- 1. Executive Summary KPI Cards (4 Kolom) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- KPI 1: Peserta Terdaftar -->
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-indigo-950/30 border border-indigo-500/20 shadow-lg relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-400">Total Terdaftar (Sistem)</span>
+                <span class="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <div class="text-3xl font-extrabold text-white tracking-tight" x-text="analyticsData?.summary?.total_participants || 0"></div>
+                <div class="mt-1 flex items-center justify-between text-[11px] text-gray-400">
+                  <span>Seluruh peserta & peran khusus</span>
+                  <span class="text-indigo-300 font-semibold" x-text="(analyticsData?.role_metrics?.length || 0) + ' peran'"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- KPI 2: Presensi Hadir -->
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-cyan-950/30 border border-cyan-500/20 shadow-lg relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-400">Presensi Kehadiran</span>
+                <span class="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <div class="text-3xl font-extrabold text-cyan-300 tracking-tight" x-text="analyticsData?.summary?.total_attendances || 0"></div>
+                <div class="mt-1 flex items-center justify-between text-[11px] text-gray-400">
+                  <span class="flex items-center space-x-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                    <span>Geotag GPS: <strong class="text-white" x-text="(analyticsData?.summary?.geotag_percentage || 0) + '%'"></strong></span>
+                  </span>
+                  <span class="text-gray-500 font-mono" x-text="(analyticsData?.summary?.geotag_verified_count || 0) + ' verified'"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- KPI 3: Sertifikat Terbit -->
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-amber-950/30 border border-amber-500/20 shadow-lg relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-400">Sertifikat Diterbitkan</span>
+                <span class="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <div class="text-3xl font-extrabold text-amber-300 tracking-tight" x-text="analyticsData?.summary?.total_certificates || 0"></div>
+                <div class="mt-1 flex items-center justify-between text-[11px] text-gray-400">
+                  <span>Unduhan: <strong class="text-white" x-text="analyticsData?.summary?.total_downloads || 0"></strong> kali</span>
+                  <span :class="analyticsData?.is_cert_open ? 'text-emerald-400' : 'text-amber-400'" class="font-bold text-[10px]" x-text="analyticsData?.is_cert_open ? '🔓 Akses Buka' : '🔒 Terkunci'"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- KPI 4: Rasio Klaim Sertifikat -->
+            <div class="p-5 rounded-2xl bg-gradient-to-br from-gray-900 to-emerald-950/30 border border-emerald-500/20 shadow-lg relative overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-400">Tingkat Klaim Sertifikat</span>
+                <span class="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                </span>
+              </div>
+              <div class="mt-3">
+                <div class="text-3xl font-extrabold text-emerald-400 tracking-tight" x-text="(analyticsData?.summary?.claim_rate_percentage || 0) + '%'"></div>
+                <div class="mt-1.5 w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                  <div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" :style="'width: ' + Math.min(100, (analyticsData?.summary?.claim_rate_percentage || 0)) + '%'"></div>
+                </div>
+                <div class="mt-1 flex items-center justify-between text-[11px] text-gray-400">
+                  <span><strong class="text-white" x-text="analyticsData?.summary?.total_claimed || 0"></strong> klaim</span>
+                  <span class="text-gray-500" x-text="(analyticsData?.summary?.total_unclaimed || 0) + ' belum'"></span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 2. Interactive Charts (Role Distribution & Metrics Comparison) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Doughnut Chart: Role Distribution -->
+            <div class="lg:col-span-5 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                    <span>Distribusi Peran (Role Distribution)</span>
+                  </h3>
+                  <span class="text-[11px] text-gray-400 font-mono">Penerima & Peserta</span>
+                </div>
+                <p class="text-xs text-gray-400">
+                  Komposisi peserta berdasarkan peran: Participant, Presenter, Author, Committee, dll.
+                </p>
+              </div>
+
+              <!-- Chart Canvas Container -->
+              <div class="relative w-full h-64 mt-4 flex items-center justify-center">
+                <canvas id="analyticsRoleChart"></canvas>
+              </div>
+
+              <!-- Mini Role Summary Pills -->
+              <div class="mt-4 pt-4 border-t border-gray-800/80 grid grid-cols-2 gap-2">
+                <template x-for="r in (analyticsData?.role_metrics || [])" :key="r.role">
+                  <div class="p-2 rounded-xl bg-gray-950 border border-gray-800/60 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-1.5 truncate">
+                      <span class="w-2 h-2 rounded-full" :class="getRoleColorDot(r.role)"></span>
+                      <span class="font-semibold text-gray-300 truncate" x-text="r.role"></span>
+                    </div>
+                    <span class="font-bold text-white font-mono ml-2" x-text="r.registered_count || r.certificate_count"></span>
+                  </div>
+                </template>
+              </div>
+            </div>
+
+            <!-- Grouped Bar Chart: Metrik Komparasi (Terdaftar vs Hadir vs Klaim) -->
+            <div class="lg:col-span-7 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                    <span>Komparasi Metrik per Peran</span>
+                  </h3>
+                  <span class="text-[11px] text-gray-400 font-mono">Terdaftar vs Hadir vs Klaim</span>
+                </div>
+                <p class="text-xs text-gray-400">
+                  Perbandingan jumlah peserta terdaftar, kehadiran presensi di lokasi, dan sertifikat yang telah diklaim.
+                </p>
+              </div>
+
+              <!-- Chart Canvas Container -->
+              <div class="relative w-full h-72 mt-4 flex items-center justify-center">
+                <canvas id="analyticsCompareChart"></canvas>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-gray-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
+                <div class="flex items-center space-x-4">
+                  <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded bg-indigo-500"></span><span>Terdaftar</span></span>
+                  <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded bg-cyan-500"></span><span>Hadir Presensi</span></span>
+                  <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded bg-amber-500"></span><span>Sertifikat Terbit</span></span>
+                  <span class="flex items-center space-x-1.5"><span class="w-2.5 h-2.5 rounded bg-emerald-500"></span><span>Sudah Diklaim</span></span>
+                </div>
+                <span class="text-gray-500">Data teragregasi langsung dari database</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 3. Hourly Activity Timeline & Top Institutions (2 Kolom) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Hourly Timeline Chart -->
+            <div class="lg:col-span-6 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                  <span>Aktivitas & Jam Puncak Presensi (WIB)</span>
+                </h3>
+                <span class="text-[11px] text-purple-400 font-semibold" x-text="(analyticsData?.hourly_attendances?.length || 0) + ' periode waktu'"></span>
+              </div>
+              <p class="text-xs text-gray-400">
+                Tren jam kehadiran peserta saat melakukan check-in live camera dan geotag di lokasi acara.
+              </p>
+
+              <div class="relative w-full h-60 mt-4 flex items-center justify-center">
+                <canvas id="analyticsHourlyChart"></canvas>
+              </div>
+            </div>
+
+            <!-- Top Institutions Ranking -->
+            <div class="lg:col-span-6 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span>Top 10 Asal Institusi / Kampus Peserta</span>
+                  </h3>
+                  <span class="text-[11px] text-gray-400 font-mono">Kehadiran Terbanyak</span>
+                </div>
+                <p class="text-xs text-gray-400">
+                  Daftar instansi/lembaga yang paling banyak mengirimkan peserta dan hadir di acara ini.
+                </p>
+              </div>
+
+              <!-- List of Top Institutions -->
+              <div class="mt-4 space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                <template x-for="(inst, idx) in (analyticsData?.top_institutions || [])" :key="inst.institution">
+                  <div class="p-2.5 rounded-xl bg-gray-950 border border-gray-800/80 flex items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center space-x-2.5 min-w-0">
+                      <span class="w-5 h-5 rounded-lg flex items-center justify-center font-bold text-[10px]" :class="idx === 0 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : (idx === 1 ? 'bg-gray-700 text-gray-300' : (idx === 2 ? 'bg-amber-900/30 text-amber-600' : 'bg-gray-800 text-gray-400'))" x-text="idx + 1"></span>
+                      <span class="font-semibold text-gray-200 truncate" x-text="inst.institution" :title="inst.institution"></span>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                      <span class="font-bold text-white font-mono" x-text="inst.count + ' hadir'"></span>
+                      <span class="px-2 py-0.5 rounded-md bg-gray-800 text-gray-400 font-mono text-[10px]" x-text="inst.percentage + '%'"></span>
+                    </div>
+                  </div>
+                </template>
+                <div x-show="!analyticsData?.top_institutions || analyticsData.top_institutions.length === 0" class="p-6 text-center text-xs text-gray-500">
+                  Belum ada data institusi dari presensi kehadiran.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 4. Paper Submissions & Template Usage Breakdown (2 Kolom) -->
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Paper Analysis Card -->
+            <div class="lg:col-span-6 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                  <span>Analisis Paper Ilmiah & Presenter</span>
+                </h3>
+                <span class="text-[11px] text-gray-400 font-mono">Katalog Acara</span>
+              </div>
+              <p class="text-xs text-gray-400 mb-4">
+                Rekapitulasi karya ilmiah / makalah yang dipresentasikan dalam konferensi ini.
+              </p>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-3.5 rounded-2xl bg-gray-950 border border-gray-800/80">
+                  <div class="text-[11px] text-gray-400">Total Judul Paper</div>
+                  <div class="text-2xl font-black text-white mt-1" x-text="analyticsData?.summary?.total_papers || 0"></div>
+                  <div class="text-[10px] text-emerald-400 mt-1">Makalah Terdaftar</div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-gray-950 border border-gray-800/80">
+                  <div class="text-[11px] text-gray-400">Penulis (Authors) Terdaftar</div>
+                  <div class="text-2xl font-black text-indigo-400 mt-1" x-text="(analyticsData?.role_metrics?.find(r => r.role.toLowerCase() === 'author')?.registered_count) || 0"></div>
+                  <div class="text-[10px] text-indigo-300 mt-1">Sertifikat Penulis Terbit</div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-gray-950 border border-gray-800/80">
+                  <div class="text-[11px] text-gray-400">Presenter Terdaftar</div>
+                  <div class="text-2xl font-black text-cyan-400 mt-1" x-text="(analyticsData?.role_metrics?.find(r => r.role.toLowerCase() === 'presenter')?.registered_count) || analyticsData?.summary?.papers_with_presenter || 0"></div>
+                  <div class="text-[10px] text-cyan-300 mt-1">Pemakalah Terdata</div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-gray-950 border border-gray-800/80">
+                  <div class="text-[11px] text-gray-400">Kehadiran Presenter</div>
+                  <div class="text-2xl font-black text-amber-400 mt-1" x-text="(analyticsData?.role_metrics?.find(r => r.role.toLowerCase() === 'presenter')?.attendance_count) || 0"></div>
+                  <div class="text-[10px] text-amber-300 mt-1">Presenter Presensi Live</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Template Usage Card -->
+            <div class="lg:col-span-6 p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+                    <span>Penggunaan Desain Template Sertifikat</span>
+                  </h3>
+                  <span class="text-[11px] text-gray-400 font-mono" x-text="(analyticsData?.template_usage?.length || 0) + ' desain'"></span>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">
+                  Jumlah sertifikat yang diterbitkan berdasarkan masing-masing desain visual template aktif.
+                </p>
+              </div>
+
+              <div class="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                <template x-for="tpl in (analyticsData?.template_usage || [])" :key="tpl.template_name">
+                  <div class="p-2.5 rounded-xl bg-gray-950 border border-gray-800/80 flex items-center justify-between text-xs">
+                    <div class="flex items-center space-x-2 truncate">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-950 text-indigo-300 border border-indigo-700/50">Template</span>
+                      <span class="font-bold text-white truncate" x-text="tpl.template_name"></span>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                      <span class="font-mono text-gray-300"><strong class="text-white" x-text="tpl.certificate_count"></strong> terbit</span>
+                      <span class="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-800/50 text-emerald-400 font-mono text-[10px]" x-text="tpl.claimed_count + ' klaim'"></span>
+                    </div>
+                  </div>
+                </template>
+                <div x-show="!analyticsData?.template_usage || analyticsData.template_usage.length === 0" class="p-6 text-center text-xs text-gray-500">
+                  Belum ada template yang terhubung dengan sertifikat.
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- 5. Detail Table: Matriks Komparasi Lengkap per Peran -->
+          <div class="p-5 rounded-3xl bg-gray-900 border border-gray-800 shadow-xl space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                  <span>Matriks Komparasi Lengkap Semua Peran</span>
+                </h3>
+                <p class="text-xs text-gray-400 mt-0.5">
+                  Rincian detail: peserta terdaftar, kehadiran presensi terverifikasi, sertifikat terbit, status klaim, dan persentase keberhasilan per peran.
+                </p>
+              </div>
+
+              <span class="text-xs text-gray-400 font-mono">
+                Total Peran Terdata: <strong class="text-indigo-400" x-text="analyticsData?.role_metrics?.length || 0"></strong>
+              </span>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto rounded-xl border border-gray-800">
+              <table class="w-full text-left text-xs text-gray-300">
+                <thead class="bg-gray-950 text-gray-400 uppercase text-[10px] tracking-wider whitespace-nowrap">
+                  <tr>
+                    <th class="px-4 py-3">Peran (Role)</th>
+                    <th class="px-4 py-3 text-center">Terdaftar (Sistem)</th>
+                    <th class="px-4 py-3 text-center">Hadir Presensi</th>
+                    <th class="px-4 py-3 text-center">Sertifikat Terbit</th>
+                    <th class="px-4 py-3 text-center">Sudah Diklaim</th>
+                    <th class="px-4 py-3 text-center">Belum Diklaim</th>
+                    <th class="px-4 py-3 min-w-[140px]">Tingkat Klaim (%)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-800/80 bg-gray-900/50">
+                  <template x-for="r in (analyticsData?.role_metrics || [])" :key="r.role">
+                    <tr class="hover:bg-gray-800/40 transition">
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-2 h-2 rounded-full" :class="getRoleColorDot(r.role)"></span>
+                          <span class="font-bold text-white text-xs" x-text="r.role"></span>
+                          <span class="text-[10px] px-2 py-0.5 rounded-full font-bold border" :class="getRoleBadgeClass(r.role)" x-text="r.role"></span>
+                        </div>
+                      </td>
+                      <td class="px-4 py-3 text-center font-mono font-bold text-gray-200" x-text="r.registered_count"></td>
+                      <td class="px-4 py-3 text-center font-mono font-bold text-cyan-400" x-text="r.attendance_count"></td>
+                      <td class="px-4 py-3 text-center font-mono font-bold text-amber-400" x-text="r.certificate_count"></td>
+                      <td class="px-4 py-3 text-center font-mono font-bold text-emerald-400" x-text="r.claimed_count"></td>
+                      <td class="px-4 py-3 text-center font-mono text-gray-400" x-text="r.unclaimed_count"></td>
+                      <td class="px-4 py-3">
+                        <div class="space-y-1">
+                          <div class="flex items-center justify-between text-[11px] font-mono">
+                            <span class="font-bold text-white" x-text="r.claim_rate_percentage + '%'"></span>
+                            <span class="text-gray-500" x-text="r.claimed_count + '/' + r.certificate_count"></span>
+                          </div>
+                          <div class="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" :style="'width: ' + Math.min(100, r.claim_rate_percentage) + '%'"></div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </template>
+                  <tr x-show="!analyticsData?.role_metrics || analyticsData.role_metrics.length === 0">
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                      Belum ada data peran terdaftar untuk acara ini.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
     </main>
   </div>
 
@@ -1811,6 +2239,13 @@
         attendanceTotalPages: 1,
         attendanceHasNext: false,
         attendanceHasPrev: false,
+
+        // Analytics State
+        analyticsLoading: false,
+        analyticsData: null,
+        analyticsRoleChart: null,
+        analyticsCompareChart: null,
+        analyticsHourlyChart: null,
         showCreateEventModal: false,
         showEditEventModal: false,
         showDeleteEventModal: false,
@@ -1886,7 +2321,8 @@
             designer: '2. Template & Visual Placement',
             papers: '3. Katalog Judul Paper & Sertifikat Authors',
             attendance: '4. Presensi Kehadiran Terverifikasi',
-            special_roles: '5. Penerbitan Sertifikat Peran Khusus & Panitia'
+            special_roles: '5. Penerbitan Sertifikat Peran Khusus & Panitia',
+            analytics: '6. Analisis & Statistik Acara'
           };
           return map[this.activeTab] || 'Dashboard';
         },
@@ -2082,6 +2518,9 @@
           if (tab === 'special_roles') {
             this.loadEventTemplates();
             this.loadSpecialRoles();
+          }
+          if (tab === 'analytics') {
+            this.loadAnalytics();
           }
         },
 
@@ -2930,6 +3369,9 @@
 
         getRoleBadgeClass(role) {
           const r = (role || '').toLowerCase();
+          if (r.includes('participant') || r.includes('peserta')) return 'bg-cyan-900/40 text-cyan-300 border-cyan-700/60';
+          if (r.includes('presenter') || r.includes('pemakalah')) return 'bg-amber-900/40 text-amber-300 border-amber-700/60';
+          if (r.includes('author') || r.includes('penulis')) return 'bg-emerald-900/40 text-emerald-300 border-emerald-700/60';
           if (r.includes('committee') || r.includes('panitia')) return 'bg-purple-900/40 text-purple-300 border-purple-700/60';
           if (r.includes('reviewer') || r.includes('mitra')) return 'bg-blue-900/40 text-blue-300 border-blue-700/60';
           if (r.includes('session') || r.includes('chair')) return 'bg-amber-900/40 text-amber-300 border-amber-700/60';
@@ -2938,6 +3380,20 @@
           if (r.includes('security') || r.includes('keamanan')) return 'bg-rose-900/40 text-rose-300 border-rose-700/60';
           if (r.includes('volunteer') || r.includes('relawan') || r.includes('lo')) return 'bg-indigo-900/40 text-indigo-300 border-indigo-700/60';
           return 'bg-gray-800 text-gray-300 border-gray-700';
+        },
+
+        getRoleColorDot(role) {
+          const r = (role || '').toLowerCase();
+          if (r.includes('participant') || r.includes('peserta')) return 'bg-cyan-400';
+          if (r.includes('presenter') || r.includes('pemakalah')) return 'bg-amber-400';
+          if (r.includes('author') || r.includes('penulis')) return 'bg-emerald-400';
+          if (r.includes('committee') || r.includes('panitia')) return 'bg-purple-400';
+          if (r.includes('reviewer') || r.includes('mitra')) return 'bg-blue-400';
+          if (r.includes('session') || r.includes('chair')) return 'bg-yellow-400';
+          if (r.includes('volunteer') || r.includes('relawan')) return 'bg-indigo-400';
+          if (r.includes('clean') || r.includes('service')) return 'bg-teal-400';
+          if (r.includes('security') || r.includes('keamanan')) return 'bg-rose-400';
+          return 'bg-gray-400';
         },
 
         async loadSpecialRoles() {
@@ -3193,6 +3649,219 @@
           } else {
             prompt('Salin kode klaim berikut:', code);
           }
+        },
+
+        // ===================================================================
+        // TAB 6: EVENT ANALYTICS & STATISTICAL INTELLIGENCE
+        // ===================================================================
+        async loadAnalytics() {
+          if (!this.selectedEventId) {
+            this.analyticsData = null;
+            return;
+          }
+          this.analyticsLoading = true;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/analytics`, {
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              this.analyticsData = await res.json();
+              this.$nextTick(() => {
+                this.renderAnalyticsCharts();
+              });
+            } else {
+              console.error('Failed to load event analytics');
+            }
+          } catch (e) {
+            console.error('Error loading analytics:', e);
+          } finally {
+            this.analyticsLoading = false;
+          }
+        },
+
+        renderAnalyticsCharts() {
+          if (!this.analyticsData || typeof Chart === 'undefined') return;
+
+          const palette = [
+            '#6366f1', // Indigo
+            '#06b6d4', // Cyan
+            '#10b981', // Emerald
+            '#f59e0b', // Amber
+            '#ec4899', // Pink
+            '#8b5cf6', // Purple
+            '#f97316', // Orange
+            '#14b8a6', // Teal
+            '#e11d48', // Rose
+            '#a855f7'  // Violet
+          ];
+
+          // 1. Role Distribution Donut Chart
+          const roleCanvas = document.getElementById('analyticsRoleChart');
+          if (roleCanvas) {
+            if (this.analyticsRoleChart) {
+              this.analyticsRoleChart.destroy();
+            }
+            const labels = this.analyticsData.role_metrics.map(r => r.role);
+            const dataCounts = this.analyticsData.role_metrics.map(r => r.registered_count || r.certificate_count || 1);
+            
+            this.analyticsRoleChart = new Chart(roleCanvas, {
+              type: 'doughnut',
+              data: {
+                labels: labels,
+                datasets: [{
+                  data: dataCounts,
+                  backgroundColor: palette.slice(0, labels.length),
+                  borderWidth: 2,
+                  borderColor: '#111827',
+                  hoverOffset: 6
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: { color: '#9ca3af', boxWidth: 12, padding: 12, font: { size: 11 } }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const val = context.raw || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+                        return ` ${context.label}: ${val} (${pct}%)`;
+                      }
+                    }
+                  }
+                },
+                cutout: '65%'
+              }
+            });
+          }
+
+          // 2. Comparison Bar Chart (Terdaftar, Hadir, Terbit, Klaim)
+          const compareCanvas = document.getElementById('analyticsCompareChart');
+          if (compareCanvas) {
+            if (this.analyticsCompareChart) {
+              this.analyticsCompareChart.destroy();
+            }
+            const roles = this.analyticsData.role_metrics.map(r => r.role);
+            const registered = this.analyticsData.role_metrics.map(r => r.registered_count);
+            const attended = this.analyticsData.role_metrics.map(r => r.attendance_count);
+            const certificates = this.analyticsData.role_metrics.map(r => r.certificate_count);
+            const claimed = this.analyticsData.role_metrics.map(r => r.claimed_count);
+
+            this.analyticsCompareChart = new Chart(compareCanvas, {
+              type: 'bar',
+              data: {
+                labels: roles,
+                datasets: [
+                  { label: 'Terdaftar', data: registered, backgroundColor: '#6366f1', borderRadius: 4 },
+                  { label: 'Hadir Presensi', data: attended, backgroundColor: '#06b6d4', borderRadius: 4 },
+                  { label: 'Sertifikat Terbit', data: certificates, backgroundColor: '#f59e0b', borderRadius: 4 },
+                  { label: 'Sudah Diklaim', data: claimed, backgroundColor: '#10b981', borderRadius: 4 }
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top',
+                    labels: { color: '#9ca3af', boxWidth: 12, padding: 10, font: { size: 11 } }
+                  }
+                },
+                scales: {
+                  x: {
+                    grid: { color: '#1f2937' },
+                    ticks: { color: '#9ca3af', font: { size: 11 } }
+                  },
+                  y: {
+                    grid: { color: '#1f2937' },
+                    ticks: { color: '#9ca3af', font: { size: 11 }, beginAtZero: true }
+                  }
+                }
+              }
+            });
+          }
+
+          // 3. Hourly Attendance Line Chart
+          const hourlyCanvas = document.getElementById('analyticsHourlyChart');
+          if (hourlyCanvas && this.analyticsData.hourly_attendances && this.analyticsData.hourly_attendances.length > 0) {
+            if (this.analyticsHourlyChart) {
+              this.analyticsHourlyChart.destroy();
+            }
+            const hours = this.analyticsData.hourly_attendances.map(h => {
+              const parts = h.time_bucket.split(' ');
+              return parts.length > 1 ? parts[1] : h.time_bucket;
+            });
+            const counts = this.analyticsData.hourly_attendances.map(h => h.count);
+
+            this.analyticsHourlyChart = new Chart(hourlyCanvas, {
+              type: 'line',
+              data: {
+                labels: hours,
+                datasets: [{
+                  label: 'Presensi (Orang)',
+                  data: counts,
+                  borderColor: '#8b5cf6',
+                  backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                  fill: true,
+                  tension: 0.35,
+                  pointBackgroundColor: '#a78bfa',
+                  pointBorderColor: '#1e1b4b',
+                  pointRadius: 4
+                }]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false }
+                },
+                scales: {
+                  x: {
+                    grid: { color: '#1f2937' },
+                    ticks: { color: '#9ca3af', font: { size: 10 } }
+                  },
+                  y: {
+                    grid: { color: '#1f2937' },
+                    ticks: { color: '#9ca3af', font: { size: 10 }, beginAtZero: true }
+                  }
+                }
+              }
+            });
+          }
+        },
+
+        async exportAnalyticsCSV() {
+          if (!this.selectedEventId) return;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/analytics/export-csv`, {
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              const blob = await res.blob();
+              const evt = this.getSelectedEvent();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `Analisis_Statistik_${(evt?.name || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } else {
+              alert('Gagal mengekspor laporan analisis.');
+            }
+          } catch (e) {
+            alert('Gagal mengekspor data: ' + e.message);
+          }
+        },
+
+        printAnalytics() {
+          window.print();
         },
 
         logout() {
