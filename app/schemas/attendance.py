@@ -57,3 +57,14 @@ class AttendanceCheckInResult(BaseModel):
     cert_url: Optional[str] = None
     timestamp: datetime
     message: str
+
+
+class AttendancePaginationResponse(BaseModel):
+    items: List[AttendanceResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+    has_next: bool
+    has_prev: bool
+
