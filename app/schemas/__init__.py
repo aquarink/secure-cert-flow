@@ -17,6 +17,14 @@ from app.schemas.certificate import CertificateResponse, CertificateVerification
 from app.schemas.claim import ClaimRequest, ClaimResponse
 from app.schemas.paper import PaperBase, PaperCreate, PaperUpdate, PaperResponse, PaperBulkCreate
 from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceCheckInResult
+from app.schemas.analytics import (
+    EventAnalyticsResponse,
+    EventAnalyticsSummary,
+    RoleMetric,
+    InstitutionMetric,
+    HourlyMetric,
+    TemplateUsageMetric,
+)
 
 __all__ = [
     "UserRegister",
@@ -50,4 +58,10 @@ __all__ = [
     "AttendanceCreate",
     "AttendanceResponse",
     "AttendanceCheckInResult",
+    "EventAnalyticsResponse",
+    "EventAnalyticsSummary",
+    "RoleMetric",
+    "InstitutionMetric",
+    "HourlyMetric",
+    "TemplateUsageMetric",
 ]
