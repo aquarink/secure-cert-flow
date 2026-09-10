@@ -6,6 +6,8 @@ Handles live check-in with camera selfie capture, geolocation, IP logging, and i
 import io
 import os
 import re
+import csv
+import math
 import uuid
 import base64
 from datetime import datetime, timezone
@@ -16,7 +18,7 @@ from sqlalchemy import desc, func
 
 from app.database import get_db
 from app.models import Event, Paper, Attendance, User, Participant, Certificate
-from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceCheckInResult
+from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceCheckInResult, AttendancePaginationResponse
 from app.api.deps import get_current_user
 from app.services import minio_service, generate_claim_code, email_service
 from app.config import settings
@@ -494,25 +496,27 @@ def submit_attendance_check_in(
     }
 
 
-@router.get("/events/{event_id}/attendance", response_model=List[AttendanceResponse])
+@router.get("/events/{event_id}/attendance", response_model=AttendancePaginationResponse)
 def list_event_attendances(
     event_id: uuid.UUID,
-    role: Optional[str] = Query(None, description="Filter by role"),
-    q: Optional[str] = Query(None, description="Search name, email, phone, institution, or paper title"),
+    page: int = Query(1, ge=1, description="Nomor halaman (1-indexed)"),
+    page_size: int = Query(10, ge=1, le=100, description="Jumlah data per halaman (10, 25, 50, 100)"),
+    role: Optional[str] = Query(None, description="Filter peran kehadiran"),
+    q: Optional[str] = Query(None, description="Pencarian nama, email, hp, institusi, judul paper, IP"),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Organizer endpoint to list all attendance records for an event with claim code links.
+    Organizer endpoint to list attendance records for an event with AJAX pagination and search filter.
     """
     event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
 
     query = db.query(Attendance).filter(Attendance.event_id == event_id)
-    if role:
+    if role and role.strip() and role.strip().lower() != "all":
         query = query.filter(Attendance.role.ilike(role.strip()))
-    if q:
+    if q and q.strip():
         search_pattern = f"%{q.strip()}%"
         query = query.filter(
             (Attendance.full_name.ilike(search_pattern)) |
@@ -523,16 +527,29 @@ def list_event_attendances(
             (Attendance.ip_address.ilike(search_pattern))
         )
 
-    attendances = query.order_by(desc(Attendance.created_at)).all()
+    total = query.count()
+    total_pages = max(1, math.ceil(total / page_size)) if total > 0 else 1
+    current_page = min(page, total_pages) if total > 0 else 1
+    offset = (current_page - 1) * page_size
 
-    # Match each attendance with certificate claim code
+    attendances = query.order_by(desc(Attendance.created_at)).offset(offset).limit(page_size).all()
+
+    # Pre-fetch participant records matching names of attendances on this page to avoid N+1 queries
+    names = list(set([a.full_name for a in attendances])) if attendances else []
+    participants = db.query(Participant).filter(
+        Participant.event_id == event_id,
+        Participant.name.in_(names)
+    ).all() if names else []
+
+    p_map = {}
+    for p in participants:
+        key = (p.name.lower().strip(), p.role.lower().strip())
+        if key not in p_map or (p.created_at and p_map[key].created_at and p.created_at > p_map[key].created_at):
+            p_map[key] = p
+
     results = []
     for att in attendances:
-        p = db.query(Participant).filter(
-            Participant.event_id == event_id,
-            Participant.name == att.full_name,
-            Participant.role == att.role
-        ).order_by(Participant.created_at.desc()).first()
+        p = p_map.get((att.full_name.lower().strip(), att.role.lower().strip()))
 
         code = None
         if p and p.certificate:
@@ -563,7 +580,100 @@ def list_event_attendances(
             "claim_code": code
         })
 
-    return results
+    return AttendancePaginationResponse(
+        items=results,
+        total=total,
+        page=current_page,
+        page_size=page_size,
+        total_pages=total_pages,
+        has_next=current_page < total_pages,
+        has_prev=current_page > 1
+    )
+
+
+@router.get("/events/{event_id}/attendance/export-csv")
+def export_event_attendances_csv(
+    event_id: uuid.UUID,
+    role: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Exports full attendance log for an event to CSV format.
+    """
+    event = db.query(Event).filter(Event.id == event_id, Event.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Acara tidak ditemukan.")
+
+    query = db.query(Attendance).filter(Attendance.event_id == event_id)
+    if role and role.strip() and role.strip().lower() != "all":
+        query = query.filter(Attendance.role.ilike(role.strip()))
+    if q and q.strip():
+        search_pattern = f"%{q.strip()}%"
+        query = query.filter(
+            (Attendance.full_name.ilike(search_pattern)) |
+            (Attendance.email.ilike(search_pattern)) |
+            (Attendance.phone_number.ilike(search_pattern)) |
+            (Attendance.institution.ilike(search_pattern)) |
+            (Attendance.paper_title.ilike(search_pattern)) |
+            (Attendance.ip_address.ilike(search_pattern))
+        )
+
+    attendances = query.order_by(desc(Attendance.created_at)).all()
+
+    # Pre-fetch participants for claim codes
+    participants = db.query(Participant).filter(Participant.event_id == event_id).all()
+    p_map = {}
+    for p in participants:
+        key = (p.name.lower().strip(), p.role.lower().strip())
+        if key not in p_map or (p.created_at and p_map[key].created_at and p.created_at > p_map[key].created_at):
+            p_map[key] = p
+
+    output = io.StringIO()
+    output.write('\ufeff')  # UTF-8 BOM for Excel
+    writer = csv.writer(output)
+    writer.writerow([
+        "Nama Lengkap", "Email", "No WhatsApp/HP", "Institusi", "Peran",
+        "Kode Paper", "Judul Paper", "Geotag", "IP Address",
+        "Waktu Presensi", "Kode Klaim", "Tautan Sertifikat"
+    ])
+
+    for att in attendances:
+        p = p_map.get((att.full_name.lower().strip(), att.role.lower().strip()))
+        claim_code = p.certificate.claim_code if (p and p.certificate) else ""
+        paper_code_val = att.paper.paper_code if att.paper else (
+            p.custom_data.get("paper_code") if (p and p.custom_data and isinstance(p.custom_data, dict)) else ""
+        )
+        geo = f"{att.latitude}, {att.longitude}" if (att.latitude and att.longitude) else ""
+        cert_url = f"/verify/{claim_code}" if claim_code else ""
+
+        writer.writerow([
+            att.full_name,
+            att.email or "",
+            att.phone_number or "",
+            att.institution or "",
+            att.role or "",
+            paper_code_val or "",
+            att.paper_title or "",
+            geo,
+            att.ip_address or "",
+            att.created_at.strftime("%Y-%m-%d %H:%M:%S") if att.created_at else "",
+            claim_code,
+            cert_url
+        ])
+
+    csv_data = output.getvalue()
+    clean_event_name = re.sub(r'[^a-zA-Z0-9]', '_', event.name)
+    filename = f"Presensi_{clean_event_name}.csv"
+
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
 
 
 @router.delete("/events/{event_id}/attendance/reset", status_code=status.HTTP_200_OK)
