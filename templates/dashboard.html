@@ -706,7 +706,7 @@
               <p class="text-sm text-gray-400">Pantau kehadiran peserta secara real-time. Buka unduh sertifikat jika seluruh rangkaian acara telah selesai.</p>
             </div>
             <div class="flex flex-wrap items-center gap-3">
-              <select x-model="selectedEventId" @change="loadAttendances()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold">
+              <select x-model="selectedEventId" @change="attendancePage = 1; loadAttendances()" class="px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-white text-sm font-semibold">
                 <option value="">-- Pilih Acara --</option>
                 <template x-for="ev in events" :key="ev.id">
                   <option :value="ev.id" x-text="ev.name"></option>
@@ -715,11 +715,11 @@
 
               <template x-if="getSelectedEvent()">
                 <div class="flex items-center space-x-2">
-                  <button @click="exportAttendancesCSV()" :disabled="attendances.length === 0" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 text-xs font-semibold border border-gray-700 transition flex items-center space-x-1.5 shadow-md">
+                  <button @click="exportAttendancesCSV()" :disabled="attendanceTotal === 0 || attendanceLoading" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-gray-300 text-xs font-semibold border border-gray-700 transition flex items-center space-x-1.5 shadow-md">
                     <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                     <span>Export CSV</span>
                   </button>
-                  <button @click="resetAttendances()" :disabled="attendances.length === 0" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-rose-950/60 disabled:opacity-40 text-rose-400 hover:text-rose-300 text-xs font-semibold border border-gray-700 hover:border-rose-700/50 transition flex items-center space-x-1.5 shadow-md">
+                  <button @click="resetAttendances()" :disabled="attendanceTotal === 0 || attendanceLoading" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-rose-950/60 disabled:opacity-40 text-rose-400 hover:text-rose-300 text-xs font-semibold border border-gray-700 hover:border-rose-700/50 transition flex items-center space-x-1.5 shadow-md">
                     <span>🗑️ Reset Log Presensi</span>
                   </button>
                   <button @click="toggleCertRelease(getSelectedEvent())" class="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md" :class="getSelectedEvent()?.is_cert_open ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30' : 'bg-gray-800 hover:bg-gray-700 text-amber-400 border border-amber-500/40'">
@@ -746,10 +746,56 @@
             </div>
           </template>
 
+          <!-- AJAX Toolbar: Search, Role Filter, Refresh, Page Size -->
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 text-xs">
+            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+              <!-- Search Box -->
+              <div class="relative w-full sm:w-72">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-500">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </span>
+                <input type="text" x-model="attendanceSearch" @input.debounce.350ms="attendancePage = 1; loadAttendances()" placeholder="Cari nama, email, hp, institusi, paper, IP..." class="w-full pl-9 pr-8 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                <button type="button" x-show="attendanceSearch" @click="attendanceSearch = ''; attendancePage = 1; loadAttendances()" class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-gray-400 hover:text-white" title="Hapus pencarian">
+                  ✕
+                </button>
+              </div>
+
+              <!-- Filter Role -->
+              <select x-model="attendanceFilterRole" @change="attendancePage = 1; loadAttendances()" class="px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs font-semibold focus:border-indigo-500">
+                <option value="">Semua Peran</option>
+                <option value="Participant">Participant / Peserta</option>
+                <option value="Presenter">Presenter</option>
+                <option value="Author">Author / Penulis</option>
+              </select>
+
+              <!-- Refresh Button -->
+              <button type="button" @click="loadAttendances()" :disabled="attendanceLoading" class="px-3 py-2 rounded-xl bg-gray-950 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-700 transition flex items-center space-x-1.5 shadow-sm" title="Muat Ulang Data (AJAX)">
+                <svg class="w-3.5 h-3.5" :class="attendanceLoading ? 'animate-spin text-indigo-400' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                <span x-text="attendanceLoading ? 'Memuat...' : 'Refresh'"></span>
+              </button>
+            </div>
+
+            <!-- Page Size & Summary Counter -->
+            <div class="flex items-center space-x-3 w-full md:w-auto justify-between md:justify-end">
+              <span class="text-gray-400 font-mono text-[11px]">
+                Total: <span class="text-indigo-300 font-bold" x-text="attendanceTotal"></span> presensi
+              </span>
+              <div class="flex items-center space-x-1.5">
+                <span class="text-gray-500 text-[11px]">Tampilkan:</span>
+                <select x-model.number="attendancePageSize" @change="attendancePage = 1; loadAttendances()" class="px-2.5 py-1.5 rounded-lg bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                  <option :value="10">10</option>
+                  <option :value="25">25</option>
+                  <option :value="50">50</option>
+                  <option :value="100">100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <!-- Attendance Logs Table with working image streaming and status -->
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto rounded-xl border border-gray-800">
             <table class="w-full text-left text-xs text-gray-300">
-              <thead class="bg-gray-800 text-gray-400 uppercase text-[10px] tracking-wider whitespace-nowrap">
+              <thead class="bg-gray-800/90 text-gray-400 uppercase text-[10px] tracking-wider whitespace-nowrap">
                 <tr>
                   <th class="px-4 py-3 w-16 text-center">Foto Live</th>
                   <th class="px-4 py-3 min-w-[180px]">Nama & Kontak</th>
@@ -761,6 +807,17 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-800">
+                <!-- Loading State -->
+                <tr x-show="attendanceLoading">
+                  <td colspan="7" class="px-4 py-8 text-center text-gray-400">
+                    <div class="inline-flex items-center space-x-2">
+                      <svg class="animate-spin h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                      <span>Memuat data presensi via AJAX...</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Rows -->
                 <template x-for="att in attendances" :key="att.id">
                   <tr class="hover:bg-gray-800/50 transition">
                     <td class="px-4 py-3 text-center">
@@ -801,11 +858,46 @@
                     </td>
                   </tr>
                 </template>
-                <tr x-show="attendances.length === 0">
-                  <td colspan="7" class="px-4 py-8 text-center text-gray-500">Belum ada data presensi.</td>
+
+                <!-- Empty State -->
+                <tr x-show="!attendanceLoading && attendances.length === 0">
+                  <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                    <span x-text="attendanceSearch || attendanceFilterRole ? 'Tidak ada data presensi yang cocok dengan pencarian / filter.' : 'Belum ada data presensi untuk acara ini.'"></span>
+                  </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Pagination Bar for Attendance Table -->
+          <div x-show="attendanceTotal > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-gray-400">
+            <div>
+              Menampilkan <span class="font-bold text-white" x-text="getAttendanceRangeStart()"></span> s/d <span class="font-bold text-white" x-text="getAttendanceRangeEnd()"></span> dari <span class="font-bold text-indigo-400" x-text="attendanceTotal"></span> data presensi
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" @click="goToAttendancePage(1)" :disabled="attendancePage === 1 || attendanceLoading" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700" title="Halaman Pertama">
+                «
+              </button>
+              <button type="button" @click="goToAttendancePage(attendancePage - 1)" :disabled="!attendanceHasPrev || attendanceLoading" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">
+                ← Prev
+              </button>
+              
+              <template x-for="p in getPaginationRange(attendancePage, attendanceTotalPages)" :key="p">
+                <button type="button" @click="goToAttendancePage(p)"
+                        class="w-8 h-8 rounded-xl text-xs font-bold transition flex items-center justify-center border"
+                        :class="attendancePage === p ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30' : (p === '...' ? 'bg-transparent border-transparent text-gray-500 cursor-default' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white')">
+                  <span x-text="p"></span>
+                </button>
+              </template>
+
+              <button type="button" @click="goToAttendancePage(attendancePage + 1)" :disabled="!attendanceHasNext || attendanceLoading" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">
+                Next →
+              </button>
+              <button type="button" @click="goToAttendancePage(attendanceTotalPages)" :disabled="attendancePage === attendanceTotalPages || attendanceLoading" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700" title="Halaman Terakhir">
+                »
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1710,6 +1802,15 @@
         events: [],
         papers: [],
         attendances: [],
+        attendanceLoading: false,
+        attendanceSearch: '',
+        attendanceFilterRole: '',
+        attendancePage: 1,
+        attendancePageSize: 10,
+        attendanceTotal: 0,
+        attendanceTotalPages: 1,
+        attendanceHasNext: false,
+        attendanceHasPrev: false,
         showCreateEventModal: false,
         showEditEventModal: false,
         showDeleteEventModal: false,
@@ -2700,44 +2801,89 @@
           }
         },
 
-        async loadAttendances() {
-          if (!this.selectedEventId) return;
+        async loadAttendances(page = null) {
+          if (!this.selectedEventId) {
+            this.attendances = [];
+            this.attendanceTotal = 0;
+            this.attendanceTotalPages = 1;
+            return;
+          }
+          if (page !== null && page !== undefined) {
+            this.attendancePage = page;
+          }
+          this.attendanceLoading = true;
           try {
             const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/api/v1/events/${this.selectedEventId}/attendance`, {
+            const params = new URLSearchParams({
+              page: this.attendancePage,
+              page_size: this.attendancePageSize,
+              role: this.attendanceFilterRole || '',
+              q: this.attendanceSearch || ''
+            });
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/attendance?${params.toString()}`, {
               headers: token ? { 'Authorization': `Bearer ${token}` } : {}
             });
-            if (res.ok) this.attendances = await res.json();
+            if (res.ok) {
+              const data = await res.json();
+              this.attendances = data.items || [];
+              this.attendanceTotal = data.total || 0;
+              this.attendancePage = data.page || 1;
+              this.attendancePageSize = data.page_size || 10;
+              this.attendanceTotalPages = data.total_pages || 1;
+              this.attendanceHasNext = data.has_next || false;
+              this.attendanceHasPrev = data.has_prev || false;
+            }
           } catch (e) {
-            console.error(e);
+            console.error('Error loading attendances:', e);
+          } finally {
+            this.attendanceLoading = false;
           }
         },
 
-        exportAttendancesCSV() {
-          if (this.attendances.length === 0) return;
-          const evt = this.getSelectedEvent();
-          let csv = "Nama Lengkap,Email,No WhatsApp/HP,Institusi,Peran,Kode Paper,Judul Paper,Geotag,IP Address,Waktu Presensi,Kode Klaim,Tautan Sertifikat\n";
-          this.attendances.forEach(att => {
-            const name = `"${(att.full_name || '').replace(/"/g, '""')}"`;
-            const email = `"${(att.email || '').replace(/"/g, '""')}"`;
-            const phone = `"${(att.phone_number || '').replace(/"/g, '""')}"`;
-            const inst = `"${(att.institution || '').replace(/"/g, '""')}"`;
-            const role = `"${(att.role || '').replace(/"/g, '""')}"`;
-            const paperCode = `"${att.paper_code || ''}"`;
-            const paper = `"${(att.paper_title || '').replace(/"/g, '""')}"`;
-            const geo = `"${att.latitude && att.longitude ? (att.latitude + ', ' + att.longitude) : ''}"`;
-            const ip = `"${att.ip_address || ''}"`;
-            const time = `"${new Date(att.created_at).toLocaleString('id-ID')}"`;
-            const claim = `"${att.claim_code || ''}"`;
-            const url = att.claim_code ? `"${window.location.origin}/verify/${att.claim_code}"` : '""';
-            csv += `${name},${email},${phone},${inst},${role},${paperCode},${paper},${geo},${ip},${time},${claim},${url}\n`;
-          });
-          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Presensi_Kehadiran_${(evt?.name || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
-          a.click();
+        goToAttendancePage(p) {
+          if (p === '...' || p === this.attendancePage || this.attendanceLoading) return;
+          const pageNum = parseInt(p, 10);
+          if (pageNum >= 1 && pageNum <= this.attendanceTotalPages) {
+            this.loadAttendances(pageNum);
+          }
+        },
+
+        getAttendanceRangeStart() {
+          if (this.attendanceTotal === 0) return 0;
+          return ((this.attendancePage - 1) * this.attendancePageSize) + 1;
+        },
+
+        getAttendanceRangeEnd() {
+          if (this.attendanceTotal === 0) return 0;
+          return Math.min(this.attendancePage * this.attendancePageSize, this.attendanceTotal);
+        },
+
+        async exportAttendancesCSV() {
+          if (!this.selectedEventId || this.attendanceTotal === 0) return;
+          try {
+            const token = localStorage.getItem('auth_token');
+            const params = new URLSearchParams({
+              role: this.attendanceFilterRole || '',
+              q: this.attendanceSearch || ''
+            });
+            const res = await fetch(`/api/v1/events/${this.selectedEventId}/attendance/export-csv?${params.toString()}`, {
+              headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+            });
+            if (res.ok) {
+              const blob = await res.blob();
+              const evt = this.getSelectedEvent();
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `Presensi_Kehadiran_${(evt?.name || 'Event').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            } else {
+              alert('Gagal mengekspor data presensi.');
+            }
+          } catch (e) {
+            alert('Gagal mengekspor data: ' + e.message);
+          }
         },
 
         previewPhoto(url) {
@@ -2758,6 +2904,7 @@
             if (res.ok) {
               const data = await res.json();
               alert(data.message || 'Presensi berhasil direset.');
+              this.attendancePage = 1;
               await this.loadAttendances();
             } else {
               const err = await res.json();
