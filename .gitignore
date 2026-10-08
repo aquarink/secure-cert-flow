@@ -46,6 +46,7 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 tailadmin-free-tailwind-dashboard-template-main.zip
+*.zip
 
 # Storage & Uploads
 uploads/
