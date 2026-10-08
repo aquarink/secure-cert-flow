@@ -75,7 +75,8 @@ def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
             "font_size": f.font_size,
             "font_family": f.font_family or "Cinzel-Bold.ttf",
             "font_color": f.font_color or "#1E293B",
-            "text_align": f.text_align or "center"
+            "text_align": f.text_align or "center",
+            "max_width": f.max_width,
         }
         for f in template.fields
     ]
