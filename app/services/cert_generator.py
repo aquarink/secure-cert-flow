@@ -4,6 +4,7 @@ Uses Pillow and QRCode to generate cryptographically-hashed, tamper-proof certif
 """
 
 import io
+import math
 import hashlib
 import logging
 from typing import Dict, Any, List, Optional, Tuple
@@ -67,15 +68,15 @@ class CertificateGenerator:
         text: str,
         font: ImageFont.ImageFont,
         draw: ImageDraw.ImageDraw,
-        max_width: int
+        max_width: int,
+        max_words_per_line: Optional[int] = None,
     ) -> List[str]:
         """
         Wraps text preserving atomic author names and whole words without hyphenation.
+        Supports maximum words per line and balanced multi-line distribution.
         """
-        bbox = draw.textbbox((0, 0), text, font=font)
-        width = bbox[2] - bbox[0]
-        if width <= max_width:
-            return [text]
+        if not text:
+            return []
 
         # 1. If text has author separators ' - ', break by full author items
         if " - " in text:
@@ -94,19 +95,39 @@ class CertificateGenerator:
                 lines.append(" - ".join(current_line))
             return lines
 
-        # 2. Standard word-based wrapping without cutting words
-        words = text.split(" ")
+        # 2. Standard word-based wrapping with word limit and balanced distribution
+        words = [w for w in text.split(" ") if w]
+        if not words:
+            return []
+        total_words = len(words)
+
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_w = bbox[2] - bbox[0]
+
+        # Single line check
+        if max_words_per_line is None:
+            if text_w <= max_width:
+                return [text]
+            target_lines = max(2, math.ceil(text_w / max_width))
+        else:
+            if total_words <= max_words_per_line and text_w <= max_width:
+                return [text]
+            target_lines = max(2, math.ceil(total_words / max_words_per_line), math.ceil(text_w / max_width))
+
+        # Balance words evenly across target lines
+        words_per_line = math.ceil(total_words / target_lines)
         lines = []
         current_line = []
         for w in words:
-            if not w:
-                continue
             test_line = " ".join(current_line + [w])
             test_bbox = draw.textbbox((0, 0), test_line, font=font)
-            if (test_bbox[2] - test_bbox[0]) <= max_width or not current_line:
+            test_w = test_bbox[2] - test_bbox[0]
+
+            if len(current_line) < words_per_line and test_w <= max_width:
                 current_line.append(w)
             else:
-                lines.append(" ".join(current_line))
+                if current_line:
+                    lines.append(" ".join(current_line))
                 current_line = [w]
         if current_line:
             lines.append(" ".join(current_line))
@@ -122,7 +143,9 @@ class CertificateGenerator:
         font_size: int,
         fill_color: str,
         align: str = "center",
-        max_width: Optional[int] = None
+        max_width: Optional[int] = None,
+        max_words_per_line: Optional[int] = None,
+        is_title: bool = False,
     ):
         """
         Draws text accurately with auto-scaling and atomic multi-line wrapping.
@@ -131,23 +154,40 @@ class CertificateGenerator:
         if not text:
             return
 
-        effective_max_width = max_width or 1600
+        words = [w for w in text.split(" ") if w]
+        total_words = len(words)
 
-        # Step A: Auto-scale font size down slightly if overflowing single line
+        # Dynamic sensible defaults for long titles / abstracts / paper names
+        if is_title or total_words >= 7:
+            effective_max_width = max_width or 1100
+            effective_max_words = max_words_per_line or 7
+        else:
+            effective_max_width = max_width or 1400
+            effective_max_words = max_words_per_line
+
+        # Estimate target lines and adapt font size for vertical balance
         current_size = font_size
-        min_auto_size = max(14, int(font_size * 0.70))
+        if effective_max_words and total_words > effective_max_words:
+            estimated_lines = math.ceil(total_words / effective_max_words)
+            if estimated_lines >= 4:
+                current_size = min(current_size, 18)
+            elif estimated_lines == 3:
+                current_size = min(current_size, 20)
+            elif estimated_lines == 2:
+                current_size = min(current_size, 24)
+
         font = self._get_font(font_family, current_size)
-        bbox = draw.textbbox((0, 0), text, font=font)
-        text_w = bbox[2] - bbox[0]
+        lines = self._smart_wrap_text(text, font, draw, effective_max_width, effective_max_words)
 
-        while text_w > effective_max_width and current_size > min_auto_size:
-            current_size -= 2
+        # Fine-tune: if any line still overflows width boundary, scale down font slightly
+        min_auto_size = max(13, int(font_size * 0.55))
+        while current_size > min_auto_size:
+            max_line_w = max((draw.textbbox((0, 0), l, font=font)[2] - draw.textbbox((0, 0), l, font=font)[0]) for l in lines)
+            if max_line_w <= effective_max_width:
+                break
+            current_size -= 1
             font = self._get_font(font_family, current_size)
-            bbox = draw.textbbox((0, 0), text, font=font)
-            text_w = bbox[2] - bbox[0]
-
-        # Step B: Smart atomic multi-line wrap if still exceeding max_width
-        lines = self._smart_wrap_text(text, font, draw, effective_max_width)
+            lines = self._smart_wrap_text(text, font, draw, effective_max_width, effective_max_words)
 
         # Calculate line height & total block height
         sample_bbox = draw.textbbox((0, 0), "Aj", font=font)
@@ -223,6 +263,8 @@ class CertificateGenerator:
             font_family = field.get("font_family", "DejaVuSans-Bold.ttf")
             align = field.get("text_align", "center")
             max_width = field.get("max_width")
+            max_words_per_line = field.get("max_words_per_line")
+            is_title = any(t in key.lower() for t in ["judul", "paper", "title"])
 
             self.draw_aligned_text(
                 draw=draw,
@@ -233,7 +275,9 @@ class CertificateGenerator:
                 font_size=font_size,
                 fill_color=font_color,
                 align=align,
-                max_width=max_width
+                max_width=max_width,
+                max_words_per_line=max_words_per_line,
+                is_title=is_title,
             )
 
         # 3. Render Auto-numbering serial code
