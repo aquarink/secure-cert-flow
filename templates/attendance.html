@@ -176,13 +176,13 @@
           <input type="text" x-model="form.institution" required placeholder="Contoh: Fakultas Sains dan Teknologi, UIN Syarif Hidayatullah Jakarta" class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition placeholder-gray-600">
         </div>
 
-        <!-- 4. Role Dropdown (Participant, Presenter, Author) -->
+        <!-- 4. Role Dropdown (Dynamically populated from Visual Template & Penempatan) -->
         <div class="space-y-2">
           <label class="block text-xs font-bold text-gray-300 uppercase tracking-wider">Peran Kepesertaan (Participation Role) <span class="text-rose-400">*</span></label>
           <select x-model="form.role" @change="onRoleChange()" required class="w-full px-4 py-3 rounded-xl bg-gray-950 border border-gray-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-white text-sm transition">
-            <option value="Participant">Participant / Attendee / Peserta</option>
-            <option value="Presenter">Presenter (Oral / Parallel Session)</option>
-            <option value="Author">Author / Co-Author</option>
+            <template x-for="r in availableRoles" :key="r.value">
+              <option :value="r.value" x-text="r.label" :selected="form.role === r.value"></option>
+            </template>
           </select>
         </div>
 
@@ -501,12 +501,16 @@
         authorCheck: { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false },
         authorCheckLoading: false,
 
+        availableRoles: [
+          { value: 'Peserta', label: 'Peserta (Default)', is_default: true, requires_paper: false }
+        ],
+
         form: {
           full_name: '',
           email: '',
           phone_number: '',
           institution: '',
-          role: 'Participant', // Default Participant
+          role: 'Peserta',
           paper_id: null,
           paper_code: '',
           paper_title: '',
@@ -528,6 +532,19 @@
             this.eventInfo = await res.json();
             this.filteredPapers = this.eventInfo.papers || [];
             this.helperFilteredPapers = this.eventInfo.papers || [];
+
+            if (this.eventInfo.roles && this.eventInfo.roles.length > 0) {
+              this.availableRoles = this.eventInfo.roles;
+              this.$nextTick(() => {
+                const currentVal = (this.form.role || '').toLowerCase();
+                const matched = this.availableRoles.find(r => r.value.toLowerCase() === currentVal);
+                if (matched) {
+                  this.form.role = matched.value;
+                } else {
+                  this.form.role = this.availableRoles[0].value;
+                }
+              });
+            }
           } catch (e) {
             alert('Failed to load event details: ' + e.message);
           } finally {
@@ -788,7 +805,9 @@
         },
 
         onRoleChange() {
-          if (this.form.role === 'Participant') {
+          if (this.form.role === 'Author' || this.form.role === 'Presenter') {
+            this.fetchUserPapers();
+          } else {
             this.form.paper_id = null;
             this.form.paper_code = '';
             this.form.paper_title = '';
@@ -797,8 +816,6 @@
             this.authorCheck = { status: '', message: '', matched_author: '', is_claimed: false, is_valid: false };
             this.userPapers = [];
             this.userPapersSearched = false;
-          } else if (this.form.role === 'Author' || this.form.role === 'Presenter') {
-            this.fetchUserPapers();
           }
         },
 
