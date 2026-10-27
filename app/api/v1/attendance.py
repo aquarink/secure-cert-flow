@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
 from app.database import get_db
-from app.models import Event, Paper, Attendance, User, Participant, Certificate
+from app.models import Event, Paper, Attendance, User, Participant, Certificate, Template
 from app.schemas.attendance import AttendanceCreate, AttendanceResponse, AttendanceCheckInResult, AttendancePaginationResponse
 from app.api.deps import get_current_user
 from app.services import minio_service, generate_claim_code, email_service
@@ -283,16 +283,110 @@ def get_my_papers_endpoint(
     }
 
 
+def extract_event_attendance_roles(event_id: uuid.UUID, db: Session) -> list:
+    """
+    Derives available attendance participation roles dynamically from the event's configured Visual Templates.
+    Enables automatic matching for Peserta (default), Moderator, Narasumber, Presenter, Author, and custom roles.
+    """
+    templates = db.query(Template).filter(Template.event_id == event_id).order_by(Template.is_default.desc(), Template.created_at.asc()).all()
+    paper_count = db.query(Paper).filter(Paper.event_id == event_id).count()
+
+    roles = []
+    seen = set()
+
+    for t in templates:
+        target = (t.role_target or "").strip()
+        name = (t.name or "").strip()
+
+        is_default = (
+            t.is_default
+            or target.lower() in ["template utama", "all", "peserta", "participant"]
+            or name.lower() in ["template utama", "all"]
+        )
+
+        if target.lower() in ["author", "penulis"] or name.lower() in ["author", "penulis"]:
+            role_val = "Author"
+            role_label = name if name.lower() not in ["author", "all"] else "Author / Co-Author"
+            req_paper = True
+        elif target.lower() in ["presenter"] or name.lower() in ["presenter"]:
+            role_val = "Presenter"
+            role_label = name if name.lower() not in ["presenter", "all"] else "Presenter (Oral / Parallel Session)"
+            req_paper = True
+        elif is_default:
+            role_val = "Peserta" if (target.lower() in ["template utama", "all", "peserta"] or name.lower() in ["template utama", "all"]) else (target if target and target != "ALL" else name)
+            role_label = "Peserta (Default)" if role_val in ["Peserta", "Participant", "Template Utama"] else f"{name} (Default)"
+            req_paper = False
+        else:
+            role_val = target if target and target != "ALL" else name
+            role_label = name
+            req_paper = False
+
+        if role_val.lower() in seen:
+            continue
+        seen.add(role_val.lower())
+
+        roles.append({
+            "value": role_val,
+            "label": role_label,
+            "is_default": is_default,
+            "requires_paper": req_paper
+        })
+
+    # If event has registered papers, ensure Presenter and Author options are available
+    if paper_count > 0:
+        if "presenter" not in seen:
+            roles.append({
+                "value": "Presenter",
+                "label": "Presenter (Oral / Parallel Session)",
+                "is_default": False,
+                "requires_paper": True
+            })
+            seen.add("presenter")
+        if "author" not in seen:
+            roles.append({
+                "value": "Author",
+                "label": "Author / Co-Author",
+                "is_default": False,
+                "requires_paper": True
+            })
+            seen.add("author")
+
+    # Fallback if event has no templates configured
+    if not roles:
+        roles.append({
+            "value": "Peserta",
+            "label": "Peserta (Default)",
+            "is_default": True,
+            "requires_paper": False
+        })
+        if paper_count > 0:
+            roles.append({
+                "value": "Presenter",
+                "label": "Presenter (Oral / Parallel Session)",
+                "is_default": False,
+                "requires_paper": True
+            })
+            roles.append({
+                "value": "Author",
+                "label": "Author / Co-Author",
+                "is_default": False,
+                "requires_paper": True
+            })
+
+    return roles
+
+
 @router.get("/events/{event_id}/attendance/public-info")
 def get_public_attendance_info(event_id: uuid.UUID, db: Session = Depends(get_db)):
     """
-    Public endpoint providing event metadata and paper catalog for attendance form autocomplete.
+    Public endpoint providing event metadata, dynamic participation roles, and paper catalog for attendance form autocomplete.
     """
     event = db.query(Event).filter(Event.id == event_id).first()
     if not event:
         raise HTTPException(status_code=404, detail="Event not found.")
 
     papers = db.query(Paper).filter(Paper.event_id == event_id).order_by(Paper.paper_code.asc()).all()
+    roles = extract_event_attendance_roles(event_id, db)
 
     return {
         "event_id": event.id,
@@ -302,6 +396,7 @@ def get_public_attendance_info(event_id: uuid.UUID, db: Session = Depends(get_db
         "event_date": event.event_date.strftime("%A, %d %B %Y"),
         "description": event.description or "",
         "status": event.status,
+        "roles": roles,
         "papers": [
             {
                 "id": str(p.id),
@@ -460,9 +555,30 @@ def submit_attendance_check_in(
     db.add(participant)
     db.flush()
 
+    # Resolve matched template specifically based on role_target or template name
+    matched_template = None
+    if event.templates:
+        for t in event.templates:
+            if t.role_target and t.role_target.lower() == attendance.role.lower():
+                matched_template = t
+                break
+        if not matched_template:
+            for t in event.templates:
+                if t.name and t.name.lower() == attendance.role.lower():
+                    matched_template = t
+                    break
+        if not matched_template and attendance.role.lower() in ["peserta", "participant", "attendee"]:
+            for t in event.templates:
+                if t.is_default or (t.role_target and t.role_target.lower() in ["template utama", "all", "peserta", "participant"]):
+                    matched_template = t
+                    break
+    if not matched_template:
+        matched_template = event.template
+
     certificate = Certificate(
         event_id=event_id,
         participant_id=participant.id,
+        template_id=matched_template.id if matched_template else None,
         certificate_number=cert_num,
         claim_code=claim_code,
         status="GENERATED",
