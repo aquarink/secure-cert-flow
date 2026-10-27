@@ -53,6 +53,11 @@ def ensure_certificate_rendered(cert: Certificate, db: Session) -> bytes:
                 if t.name and t.name.lower() == p.role.lower():
                     template = t
                     break
+        if not template and p.role.lower() in ["participant", "peserta", "attendee"]:
+            for t in event.templates:
+                if t.is_default or (t.role_target and t.role_target.lower() in ["template utama", "all", "participant", "peserta"]):
+                    template = t
+                    break
     if not template:
         template = event.template
 
