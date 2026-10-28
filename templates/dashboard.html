@@ -988,6 +988,9 @@
 
             <!-- Mode Selector (Tabs) -->
             <div class="flex items-center bg-gray-950 p-1 rounded-xl border border-gray-800 text-xs">
+              <button type="button" @click="specialRoleInputMode = 'form'" :class="specialRoleInputMode === 'form' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg transition">
+                📝 Form Isian
+              </button>
               <button type="button" @click="specialRoleInputMode = 'text'" :class="specialRoleInputMode === 'text' ? 'bg-indigo-600 text-white font-bold shadow' : 'text-gray-400 hover:text-white'" class="px-3 py-1.5 rounded-lg transition">
                 📋 Paste Teks Cepat
               </button>
@@ -1038,6 +1041,48 @@
                 <p class="text-[10px] text-gray-400 leading-normal">Penerima akan mendapatkan email berisi Kode Klaim 8-karakter dan link direct untuk mengunduh sertifikat.</p>
               </div>
             </div>
+          </div>
+
+          <!-- Input Mode F: Form Isian (Field Terpisah) -->
+          <div x-show="specialRoleInputMode === 'form'" class="space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <label class="font-semibold text-gray-300 uppercase">Daftar Penerima <span class="text-gray-400 font-normal normal-case">(isi per kolom — nama boleh mengandung gelar &amp; koma)</span></label>
+              <span class="text-[11px] text-gray-500" x-text="specialRoleRows.length + ' baris'"></span>
+            </div>
+
+            <!-- Column headers (desktop) -->
+            <div class="hidden md:grid grid-cols-12 gap-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+              <div class="col-span-1 text-center">#</div>
+              <div class="col-span-4">Nama Lengkap <span class="text-rose-400">*</span></div>
+              <div class="col-span-4">Email <span class="text-rose-400">*</span></div>
+              <div class="col-span-2">Institusi</div>
+              <div class="col-span-1"></div>
+            </div>
+
+            <div class="space-y-2">
+              <template x-for="(row, rIdx) in specialRoleRows" :key="rIdx">
+                <div class="grid grid-cols-12 gap-2 items-center">
+                  <div class="col-span-1 text-center text-gray-500 font-mono text-xs" x-text="rIdx + 1"></div>
+                  <input type="text" x-model="row.name" placeholder="Dr. Qurrotul Aini, M.T." class="col-span-12 md:col-span-4 px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                  <input type="email" x-model="row.email" placeholder="nama@contoh.ac.id" class="col-span-12 md:col-span-4 px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                  <input type="text" x-model="row.institution" placeholder="Institusi (opsional)" class="col-span-10 md:col-span-2 px-3 py-2 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                  <div class="col-span-2 md:col-span-1 flex justify-center">
+                    <button type="button" @click="removeSpecialRoleRow(rIdx)" :disabled="specialRoleRows.length === 1" class="p-2 rounded-lg bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white transition border border-rose-500/40 disabled:opacity-30 disabled:cursor-not-allowed" title="Hapus baris">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+              <button type="button" @click="addSpecialRoleRow()" class="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white font-semibold text-xs border border-gray-700 transition flex items-center space-x-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                <span>Tambah Baris Penerima</span>
+              </button>
+              <button type="button" @click="clearSpecialRoleRows()" class="text-[11px] text-gray-400 hover:text-rose-300 underline font-medium">Kosongkan Semua</button>
+            </div>
+            <p class="text-[11px] text-gray-500">💡 Setiap kolom terpisah, jadi nama bergelar seperti <code class="text-indigo-300">Dr. Qurrotul Aini, M.T.</code> aman tanpa salah baca.</p>
           </div>
 
           <!-- Input Mode A: Paste Teks Cepat -->
@@ -1099,12 +1144,12 @@
             <div class="flex flex-wrap items-center gap-2.5">
               <!-- Live Search -->
               <div class="relative">
-                <input type="text" x-model="specialRolesSearch" placeholder="Cari nama, email, kode..." class="w-48 md:w-56 px-3 py-1.5 pl-8 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                <input type="text" x-model="specialRolesSearch" @input.debounce.300ms="specialRolePage = 1" placeholder="Cari nama, email, kode..." class="w-48 md:w-56 px-3 py-1.5 pl-8 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
                 <svg class="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
               </div>
 
               <!-- Filter by Role -->
-              <select x-model="specialRolesFilterRole" class="px-3 py-1.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+              <select x-model="specialRolesFilterRole" @change="specialRolePage = 1" class="px-3 py-1.5 rounded-xl bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
                 <option value="">Semua Peran</option>
                 <template x-for="r in Array.from(new Set(specialRoles.map(i => i.role)))" :key="r">
                   <option :value="r" x-text="r"></option>
@@ -1140,9 +1185,9 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-800/60 bg-gray-900/50">
-                <template x-for="(item, idx) in filteredSpecialRoles()" :key="item.id">
+                <template x-for="(item, idx) in paginatedSpecialRoles()" :key="item.id">
                   <tr class="hover:bg-gray-800/40 transition">
-                    <td class="px-4 py-3 text-center text-gray-500 font-mono" x-text="idx + 1"></td>
+                    <td class="px-4 py-3 text-center text-gray-500 font-mono" x-text="((specialRolePage - 1) * specialRolePageSize) + idx + 1"></td>
                     <td class="px-4 py-3">
                       <div class="font-bold text-white text-sm" x-text="item.name"></div>
                       <div class="text-[11px] text-gray-400 font-mono" x-text="item.email"></div>
@@ -1183,13 +1228,47 @@
                     </td>
                   </tr>
                 </template>
-                <tr x-show="specialRoles.length === 0">
+                <tr x-show="filteredSpecialRoles().length === 0">
                   <td colspan="8" class="px-4 py-8 text-center text-gray-500">
-                    Belum ada sertifikat peran khusus yang diterbitkan untuk acara ini. Silakan gunakan form di atas untuk menerbitkan.
+                    <span x-text="(specialRolesSearch || specialRolesFilterRole) ? 'Tidak ada data yang cocok dengan pencarian / filter.' : 'Belum ada sertifikat peran khusus yang diterbitkan untuk acara ini. Silakan gunakan form di atas untuk menerbitkan.'"></span>
                   </td>
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Pagination Bar for Special Roles Table -->
+          <div x-show="filteredSpecialRoles().length > 0" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-gray-400">
+            <div class="flex items-center gap-3">
+              <div>
+                Menampilkan <span class="font-bold text-white" x-text="getSpecialRoleRangeStart()"></span> s/d <span class="font-bold text-white" x-text="getSpecialRoleRangeEnd()"></span> dari <span class="font-bold text-indigo-400" x-text="filteredSpecialRoles().length"></span> data
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-gray-500">Per halaman:</span>
+                <select x-model.number="specialRolePageSize" @change="specialRolePage = 1" class="px-2 py-1 rounded-lg bg-gray-950 border border-gray-700 text-white text-xs focus:border-indigo-500">
+                  <option :value="10">10</option>
+                  <option :value="25">25</option>
+                  <option :value="50">50</option>
+                  <option :value="100">100</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <button type="button" @click="goToSpecialRolePage(1)" :disabled="specialRolePage === 1" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700" title="Halaman Pertama">«</button>
+              <button type="button" @click="goToSpecialRolePage(specialRolePage - 1)" :disabled="specialRolePage === 1" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">← Prev</button>
+
+              <template x-for="p in getPaginationRange(specialRolePage, totalSpecialRolePages())" :key="p">
+                <button type="button" @click="goToSpecialRolePage(p)"
+                        class="w-8 h-8 rounded-xl text-xs font-bold transition flex items-center justify-center border"
+                        :class="specialRolePage === p ? 'bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-600/30' : (p === '...' ? 'bg-transparent border-transparent text-gray-500 cursor-default' : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white')">
+                  <span x-text="p"></span>
+                </button>
+              </template>
+
+              <button type="button" @click="goToSpecialRolePage(specialRolePage + 1)" :disabled="specialRolePage === totalSpecialRolePages()" class="px-3 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700">Next →</button>
+              <button type="button" @click="goToSpecialRolePage(totalSpecialRolePages())" :disabled="specialRolePage === totalSpecialRolePages()" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 text-white font-medium transition border border-gray-700" title="Halaman Terakhir">»</button>
+            </div>
           </div>
         </div>
 
@@ -2303,10 +2382,14 @@
         specialRolesFilterRole: '',
         specialRoleTemplateId: '',
         specialRoleSendEmail: true,
-        specialRoleInputMode: 'text',
+        specialRoleInputMode: 'form',
         specialRoleText: '',
+        specialRoleRows: [{ name: '', email: '', institution: '' }],
         specialRoleSubmitting: false,
         resendingSpecialRoleId: null,
+        // Client-side pagination for the issued special-roles table
+        specialRolePage: 1,
+        specialRolePageSize: 10,
 
         // Interactive Drag-and-Drop Canvas State
         draggedTarget: null, // 'field', 'qr', 'certNum'
@@ -3432,6 +3515,48 @@
           return list;
         },
 
+        // --- Form Isian (field terpisah) row helpers ---
+        addSpecialRoleRow() {
+          this.specialRoleRows.push({ name: '', email: '', institution: '' });
+        },
+        removeSpecialRoleRow(idx) {
+          if (this.specialRoleRows.length <= 1) return;
+          this.specialRoleRows.splice(idx, 1);
+        },
+        clearSpecialRoleRows() {
+          this.specialRoleRows = [{ name: '', email: '', institution: '' }];
+        },
+
+        // --- Client-side pagination for issued special-roles table ---
+        totalSpecialRolePages() {
+          const n = this.filteredSpecialRoles().length;
+          return Math.max(1, Math.ceil(n / this.specialRolePageSize));
+        },
+        paginatedSpecialRoles() {
+          const list = this.filteredSpecialRoles();
+          const totalPages = Math.max(1, Math.ceil(list.length / this.specialRolePageSize));
+          if (this.specialRolePage > totalPages) this.specialRolePage = totalPages;
+          if (this.specialRolePage < 1) this.specialRolePage = 1;
+          const start = (this.specialRolePage - 1) * this.specialRolePageSize;
+          return list.slice(start, start + this.specialRolePageSize);
+        },
+        goToSpecialRolePage(p) {
+          if (p === '...') return;
+          const pageNum = parseInt(p, 10);
+          if (pageNum >= 1 && pageNum <= this.totalSpecialRolePages()) {
+            this.specialRolePage = pageNum;
+          }
+        },
+        getSpecialRoleRangeStart() {
+          const n = this.filteredSpecialRoles().length;
+          if (n === 0) return 0;
+          return ((this.specialRolePage - 1) * this.specialRolePageSize) + 1;
+        },
+        getSpecialRoleRangeEnd() {
+          const n = this.filteredSpecialRoles().length;
+          return Math.min(this.specialRolePage * this.specialRolePageSize, n);
+        },
+
         getSpecialRoleCounts() {
           const uniqueRoles = new Set(this.specialRoles.map(i => i.role));
           return {
@@ -3456,7 +3581,58 @@
             return;
           }
 
-          if (this.specialRoleInputMode === 'text') {
+          if (this.specialRoleInputMode === 'form') {
+            const recipients = [];
+            for (const row of this.specialRoleRows) {
+              const name = (row.name || '').trim();
+              const email = (row.email || '').trim();
+              const institution = (row.institution || '').trim();
+              if (!name && !email) continue; // skip empty rows silently
+              if (!name || !email || !email.includes('@')) {
+                alert('Setiap baris wajib berisi Nama dan Email yang valid (mengandung "@"). Periksa kembali isian Anda.');
+                return;
+              }
+              recipients.push({ name, email, institution });
+            }
+
+            if (recipients.length === 0) {
+              alert('Harap isi minimal satu penerima (Nama dan Email).');
+              return;
+            }
+
+            this.specialRoleSubmitting = true;
+            try {
+              const token = localStorage.getItem('auth_token');
+              const res = await fetch(`/api/v1/events/${this.selectedEventId}/special-roles/bulk`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                  role: role,
+                  template_id: this.specialRoleTemplateId,
+                  send_email: this.specialRoleSendEmail,
+                  recipients: recipients
+                })
+              });
+
+              const data = await res.json();
+              if (res.ok) {
+                alert(`Berhasil menerbitkan ${data.created_count} sertifikat untuk peran '${role}'!${data.skipped_count ? ' (' + data.skipped_count + ' dilewati/sudah ada)' : ''}`);
+                this.specialRoleRows = [{ name: '', email: '', institution: '' }];
+                this.specialRolePage = 1;
+                await this.loadSpecialRoles();
+              } else {
+                alert('Gagal menerbitkan sertifikat: ' + (data.detail || 'Terjadi kesalahan'));
+              }
+            } catch (e) {
+              alert('Gagal: ' + e.message);
+            } finally {
+              this.specialRoleSubmitting = false;
+            }
+
+          } else if (this.specialRoleInputMode === 'text') {
             const rawText = (this.specialRoleText || '').trim();
             if (!rawText) {
               alert('Harap masukkan minimal satu baris data penerima.');
