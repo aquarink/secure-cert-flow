@@ -3644,10 +3644,23 @@
             for (let line of lines) {
               line = line.trim();
               if (!line) continue;
-              const parts = line.includes(';') ? line.split(';') : (line.includes('\t') ? line.split('\t') : line.split(','));
-              const name = (parts[0] || '').trim();
-              const email = (parts[1] || '').trim();
-              const institution = (parts[2] || '').trim();
+              const delim = line.includes(';') ? ';' : (line.includes('\t') ? '\t' : ',');
+              const parts = line.split(delim).map(s => s.trim());
+              // Deteksi field yang mengandung '@' sebagai email, agar nama bergelar
+              // berkoma (mis. "Dr. Qurrotul Aini, M.T.") tidak salah terbaca.
+              const emailIdx = parts.findIndex(p => p.includes('@'));
+              let name, email, institution;
+              if (emailIdx >= 0) {
+                email = parts[emailIdx];
+                const joiner = delim === ',' ? ', ' : delim;
+                name = parts.slice(0, emailIdx).join(joiner).trim();
+                institution = parts.slice(emailIdx + 1).join(joiner).trim();
+              } else {
+                // Fallback: pola lama Nama, Email, Institusi
+                name = (parts[0] || '').trim();
+                email = (parts[1] || '').trim();
+                institution = (parts[2] || '').trim();
+              }
               if (name && email) {
                 recipients.push({ name, email, institution });
               }
